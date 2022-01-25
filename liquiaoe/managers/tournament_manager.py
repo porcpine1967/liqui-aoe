@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """ Everything you want to know about Age of Empires Tournaments."""
+from collections import defaultdict
 from datetime import datetime
 import re
 
@@ -14,6 +15,27 @@ class TournamentManager:
         self.url = "/ageofempires/Portal:Tournaments"
         self.loader = loader
         self.load()
+
+    def completed(self, timebox):
+        tournaments = defaultdict(list)
+        for tournament in self._tournaments:
+            if  timebox[0] <= tournament.end <= timebox[1]:
+                tournaments[tournament.game].append(tournament)
+        return tournaments
+
+    def ongoing(self, timebox):
+        tournaments = defaultdict(list)
+        for tournament in self._tournaments:
+            if  timebox[0] <= tournament.start and tournament.end >= timebox[1]:
+                tournaments[tournament.game].append(tournament)
+        return tournaments
+
+    def starting(self, timebox):
+        tournaments = defaultdict(list)
+        for tournament in self._tournaments:
+            if  timebox[0] <= tournament.start <= timebox[1]:
+                tournaments[tournament.game].append(tournament)
+        return tournaments
 
     def all(self):
         """Returns information on all tournaments."""

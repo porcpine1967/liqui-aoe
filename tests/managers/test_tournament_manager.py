@@ -8,15 +8,37 @@ from liquiaoe.loaders import VcrLoader
 
 
 @pytest.fixture
-def loader():
-    return VcrLoader()
+def tournament_manager():
+    return TournamentManager(VcrLoader())
 
-@pytest.fixture
-def tournament_manager(loader):
-    return TournamentManager(loader)
-    
+def test_completed(tournament_manager):
+    """ Tests tournament filter."""
+    timebox = (datetime(2022, 1, 26), datetime(2022, 2, 1),)
+    completed_tournaments = tournament_manager.completed(timebox)
+    assert len(completed_tournaments["Age of Empires II"]) == 5
+    assert len(completed_tournaments["Age of Empires IV"]) == 5
+    assert len(completed_tournaments["Age of Empires Online"]) == 1
+    assert len(completed_tournaments["Age of Mythology"]) == 1
 
-def test_tournaments(loader, tournament_manager):
+def test_starting(tournament_manager):
+    """ Tests tournament filter."""
+    timebox = (datetime(2022, 1, 26), datetime(2022, 2, 1),)
+    starting_tournaments = tournament_manager.starting(timebox)
+    assert len(starting_tournaments["Age of Empires II"]) == 2
+    assert len(starting_tournaments["Age of Empires IV"]) == 3
+    assert len(starting_tournaments["Age of Empires Online"]) == 1
+    assert len(starting_tournaments["Age of Mythology"]) == 1
+
+def test_ongoing(tournament_manager):
+    """ Tests tournament filter."""
+    timebox = (datetime(2022, 1, 26), datetime(2022, 2, 1),)
+    ongoing_tournaments = tournament_manager.ongoing(timebox)
+    assert len(ongoing_tournaments["Age of Empires II"]) == 6
+    assert len(ongoing_tournaments["Age of Empires IV"]) == 5
+    assert len(ongoing_tournaments["Age of Empires Online"]) == 1
+    assert len(ongoing_tournaments["Age of Mythology"]) == 0
+
+def test_tournaments(tournament_manager):
     """Make sure tournament manager loads tournaments correctly."""
     assert len(tournament_manager.all()) == 60
     tournaments = tournament_manager.all()
