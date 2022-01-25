@@ -26,7 +26,7 @@ class TournamentManager:
     def ongoing(self, timebox):
         tournaments = defaultdict(list)
         for tournament in self._tournaments:
-            if  timebox[0] <= tournament.start and tournament.end >= timebox[1]:
+            if  tournament.start <= timebox[0] and timebox[1] <= tournament.end:
                 tournaments[tournament.game].append(tournament)
         return tournaments
 

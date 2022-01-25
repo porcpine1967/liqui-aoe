@@ -11,6 +11,16 @@ from liquiaoe.loaders import VcrLoader
 def tournament_manager():
     return TournamentManager(VcrLoader())
 
+def print_info(tournamentdict):
+    for game, tournaments in tournamentdict.items():
+        print("*"*25)
+        print(game)
+        print("*"*25)
+        for tournament in tournaments:
+            print("{:25}: {} - {}".format(tournament.name,
+                                      tournament.start,
+                                      tournament.end))
+
 def test_completed(tournament_manager):
     """ Tests tournament filter."""
     timebox = (datetime(2022, 1, 26), datetime(2022, 2, 1),)
@@ -34,9 +44,9 @@ def test_ongoing(tournament_manager):
     timebox = (datetime(2022, 1, 26), datetime(2022, 2, 1),)
     ongoing_tournaments = tournament_manager.ongoing(timebox)
     assert len(ongoing_tournaments["Age of Empires II"]) == 6
-    assert len(ongoing_tournaments["Age of Empires IV"]) == 5
-    assert len(ongoing_tournaments["Age of Empires Online"]) == 1
-    assert len(ongoing_tournaments["Age of Mythology"]) == 0
+    assert len(ongoing_tournaments["Age of Empires IV"]) == 1
+    assert len(ongoing_tournaments["Age of Empires Online"]) == 0
+    assert len(ongoing_tournaments["Age of Mythology"]) == 2
 
 def test_tournaments(tournament_manager):
     """Make sure tournament manager loads tournaments correctly."""
