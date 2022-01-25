@@ -90,6 +90,9 @@ class Tournament:
     def load_runners_up(self, pool_table):
         """ Loads runners up."""
         third = node_from_class(pool_table, "background-color-third-place")
+        if "TBD" in third.text:
+            """ Don't bother if the results aren't in."""
+            return
         fourth = next_tag(third)
         column_header = "Team" if self.team else "Player"
         ths = pool_table.find_all("th", recursive=True)
@@ -113,6 +116,8 @@ class Tournament:
         """ Parse information from info box"""
         for div in info_box.find_all("div"):
             try:
+                if div.div.text == "Series:":
+                    self.series = text_from_tag(div, "div")
                 if div.div.text == "Organizer:":
                     self.organizers = div_attributes(div)
                 if div.div.text == "Game Mode:":
@@ -140,10 +145,6 @@ class Tournament:
         self.tier = row.a.text.strip()
         spans = row.find_all("span")
         self.game = spans[0].a.attrs["title"]
-        try:
-            self.series = spans[1].a.attrs["title"]
-        except AttributeError:
-            self.series = None
         self.url = row.b.a.attrs["href"]
         self.name = row.b.text.strip()
 
