@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """ Everything you want to know about Age of Empires Tournaments."""
 from collections import defaultdict
-from datetime import datetime
+from datetime import date, datetime
 import re
 
 import bs4
@@ -75,7 +75,12 @@ def text_from_tag(parent, tag):
 
 def div_attributes(parent):
     divs = parent.find_all("div")
-    return [div.text.strip() for div in divs[1:]]
+    attributes = list()
+
+    for div in divs[1:]:
+        for string in div.stripped_strings:
+            attributes.append(string)
+    return attributes
 
 def next_tag(first_tag):
     sibling = first_tag.next_sibling
@@ -89,6 +94,7 @@ class Tournament:
     def __init__(self, row):
         # Basic attributes (loaded from tournaments page)
         self.cancelled = False
+        self.series = None
         self.load_basic(row)
         # Advanced (loaded from tournament page)
         self.organizers = []
@@ -129,7 +135,7 @@ class Tournament:
         fourth_columns = fourth.find_all("td")
         if "3rd-4th" in third_columns[0].text:
             links = fourth_columns[0].find_all("a")
-            self.runners_up[0] += "|{}".format(links[-1].text.strip())
+            self.runners_up[0] = "{} - {}".format(self.runners_up[0], links[-1].text.strip())
         else:
             links = fourth_columns[idx].find_all("a")
             self.runners_up.append(links[-1].text.strip())
@@ -140,7 +146,7 @@ class Tournament:
             try:
                 if div.div.text == "Series:":
                     self.series = text_from_tag(div, "div")
-                if div.div.text == "Organizer:":
+                if div.div.text in ("Organizer:", "Organizers:",):
                     self.organizers = div_attributes(div)
                 if div.div.text == "Game Mode:":
                     self.game_mode = text_from_tag(div, "div")
@@ -177,10 +183,10 @@ class Tournament:
                 start += end[-6:]
             if len(end) < 9:
                 end = start[:3] + " " + end
-            self.start = datetime.strptime(start.strip(), "%b %d, %Y")
-            self.end = datetime.strptime(end.strip(), "%b %d, %Y")
+            self.start = datetime.strptime(start.strip(), "%b %d, %Y").date()
+            self.end = datetime.strptime(end.strip(), "%b %d, %Y").date()
         else:
-            self.start = datetime.strptime(text.strip(), "%b %d, %Y")
+            self.start = datetime.strptime(text.strip(), "%b %d, %Y").date()
             self.end = self.start
 
     def load_participants(self, text):
