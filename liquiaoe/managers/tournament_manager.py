@@ -105,6 +105,9 @@ class Tournament:
         self.team = False
         self.runners_up = []
 
+    def __str__(self):
+        return self.name
+
     def load_advanced(self, loader):
         """ Call the loader for self.url and parse."""
         soup = loader.soup(self.url)
@@ -117,7 +120,11 @@ class Tournament:
 
     def load_runners_up(self, pool_table):
         """ Loads runners up."""
-        third = node_from_class(pool_table, "background-color-third-place")
+        try:
+            # Might not have a third place (Wrang of Fire 3)
+            third = node_from_class(pool_table, "background-color-third-place")
+        except ParserError:
+            return
         if "TBD" in third.text:
             """ Don't bother if the results aren't in."""
             return

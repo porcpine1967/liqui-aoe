@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """ Gets data from appropriate source."""
+import pathlib
 import time
 from bs4 import BeautifulSoup
 import requests
@@ -39,8 +40,11 @@ class HttpsLoader:
 
 class VcrLoader(HttpsLoader):
     """Object for fetching test data from cassettes."""
+    CASSETTE_DIR = "{}/tests/vcr_cassettes".format(pathlib.Path(__file__).parent.parent.resolve())
+
     def fetch_response(self, url, tail):
-        with vcr.use_cassette("tests/vcr_cassettes/{}".format(tail)):
+        cassette = "{}/{}".format(VcrLoader.CASSETTE_DIR, tail)
+        with vcr.use_cassette(cassette):
             return requests.get(url, headers=self._headers)
 
     @property

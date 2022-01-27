@@ -144,3 +144,10 @@ def test_multiple_organizers_no_links(tournament_manager):
     assert tournament.name == "Torneo Nacional Español 2021"
     tournament.load_advanced(tournament_manager.loader)
     assert len(tournament.organizers) == 4
+
+def test_missing_third_place(tournament_manager):
+    tournaments = tournament_manager.all()
+
+    tournament = tournaments[30]
+    assert tournament.name == "Wrang of Fire 3"
+    tournament.load_advanced(tournament_manager.loader)
