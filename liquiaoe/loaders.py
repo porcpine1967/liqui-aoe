@@ -1,11 +1,20 @@
 #!/usr/bin/env python3
 """ Gets data from appropriate source."""
+import os
 import pathlib
 import time
 from bs4 import BeautifulSoup
 import requests
 import vcr
 THROTTLE = 30
+CASSETTE_DIR = "{}/tests/vcr_cassettes".format(pathlib.Path(__file__).parent.parent.resolve())
+
+def tail(path):
+    """ Expects /ageofempires/(tail)"""
+    return path.split("/", 2)[-1]
+
+def cassette(path):
+    return "{}/{}".format(CASSETTE_DIR, tail(path))
 
 class HttpsLoader:
     """ Object for downloading date from liquipedia."""
@@ -18,13 +27,15 @@ class HttpsLoader:
     def throttle(self):
         return THROTTLE
 
+    def available(self, tail):
+        return True
+
     def soup(self, path):
         # Per liquipedia api terms of use, parse requires 30 second throttle
         if self.last_call + self.throttle > time.time():
             time.sleep(self.last_call + self.throttle - time.time())
-        _, _, tail = path.split("/", 2)
-        url = self._base_url.format(tail)
-        response = self.fetch_response(url, tail)
+        url = self._base_url.format(tail(path))
+        response = self.fetch_response(url, path)
         self.last_call = time.time()
         if response.status_code == 200:
             try:
@@ -40,12 +51,13 @@ class HttpsLoader:
 
 class VcrLoader(HttpsLoader):
     """Object for fetching test data from cassettes."""
-    CASSETTE_DIR = "{}/tests/vcr_cassettes".format(pathlib.Path(__file__).parent.parent.resolve())
 
-    def fetch_response(self, url, tail):
-        cassette = "{}/{}".format(VcrLoader.CASSETTE_DIR, tail)
-        with vcr.use_cassette(cassette):
+    def fetch_response(self, url, path):
+        with vcr.use_cassette(cassette(path)):
             return requests.get(url, headers=self._headers)
+
+    def available(self, path):
+        return os.path.exists(cassette(path))
 
     @property
     def throttle(self):
