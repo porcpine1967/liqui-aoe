@@ -6,7 +6,7 @@ import time
 from bs4 import BeautifulSoup
 import requests
 import vcr
-THROTTLE = 30
+THROTTLE = 5
 CASSETTE_DIR = "{}/tests/vcr_cassettes".format(pathlib.Path(__file__).parent.parent.resolve())
 
 def tail(path):
