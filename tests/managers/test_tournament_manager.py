@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 from datetime import date
-import time
 import pytest
-import vcr
 from liquiaoe.managers.tournament_manager import TournamentManager
 from liquiaoe.loaders import VcrLoader
 

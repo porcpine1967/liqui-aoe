@@ -58,7 +58,9 @@ class TournamentManager:
                 pass
         for row in rows:
             if "divRow" in row.attrs["class"]:
-                self._tournaments.append(Tournament(row))
+                tournament = Tournament()
+                tournament.load_from_portal(row)
+                self._tournaments.append(tournament)
 
 def node_from_class(ancestor, class_attribute):
     for node in ancestor.descendants:
@@ -91,11 +93,13 @@ def next_tag(first_tag):
     return None
 
 class Tournament:
-    def __init__(self, row):
+    def __init__(self):
         # Basic attributes (loaded from tournaments page)
+        self.name = self.url = self.game = self.tier = self.prize = ""
+        self.start = self.end = self.first_place = self.first_place_url = self.second_place = None
+        self.participant_count = -1
         self.cancelled = False
         self.series = None
-        self.load_basic(row)
         # Advanced (loaded from tournament page)
         self.organizers = []
         self.sponsors = []
@@ -107,6 +111,9 @@ class Tournament:
 
     def __str__(self):
         return self.name
+
+    def load_from_player(self, row):
+        pass
 
     def load_advanced(self, loader):
         """ Call the loader for self.url and parse."""
@@ -189,14 +196,14 @@ class Tournament:
             except AttributeError:
                 pass
 
-    def load_basic(self, row):
+    def load_from_portal(self, row):
         divs = row.find_all("div")
         self.load_header(divs[0])
         self.load_dates(divs[1].text)
         self.prize = divs[2].text.strip()
         self.load_participants(divs[3].text)
         self.first_place = self.first_place_url = self.second_place = None
-        self.load_first_place(divs[5])
+        self.load_first_place_from_row(divs[5])
         if self.first_place:
             self.load_second_place(divs[6])
 
@@ -225,10 +232,8 @@ class Tournament:
         match = PARTICIPANTS.match(text)
         if match:
             self.participant_count = int(match.group(1))
-        else:
-            self.participant_count = -1
 
-    def load_first_place(self, div):
+    def load_first_place_from_row(self, div):
         if div.text == "Cancelled":
             self.cancelled = True
             return
