@@ -62,8 +62,8 @@ def test_tournaments(tournament_manager):
     assert tournament.prize == "$500"
     assert tournament.participant_count == 8
     assert not tournament.cancelled
-    assert tournament.first_place == "TBD"
-    assert tournament.second_place == "TBD"
+    assert tournament.first_place == None
+    assert tournament.second_place == None
 
     assert tournaments[3].end == date(2022, 3, 27)
     assert tournaments[13].start == date(2021, 12, 13)
@@ -145,9 +145,12 @@ def test_multiple_organizers_no_links(tournament_manager):
     tournament.load_advanced(tournament_manager.loader)
     assert len(tournament.organizers) == 4
 
-def test_missing_third_place(tournament_manager):
+def test_second_third_place(tournament_manager):
     tournaments = tournament_manager.all()
 
     tournament = tournaments[30]
     assert tournament.name == "Wrang of Fire 3"
+    # Set because easier than messing with vcr
+    tournament.first_place = "Trundo"
     tournament.load_advanced(tournament_manager.loader)
+    assert tournament.second_place == "Enzberg - Joey the Bonqueror"

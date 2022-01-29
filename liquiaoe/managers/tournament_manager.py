@@ -116,25 +116,41 @@ class Tournament:
             raise ParserError("No mw-parser-output in soup")
         self.description = main.p.text.strip()
         self.load_info_box(node_from_class(main, "fo-nttax-infobox"))
-        self.load_runners_up(node_from_class(main, "prizepooltable"))
+        prize_table = node_from_class(main, "prizepooltable")
+        self.load_runners_up(prize_table)
+        if self.first_place and not self.second_place:
+            self.load_second_third(prize_table)
 
-    def load_runners_up(self, pool_table):
+    def load_second_third(self, prize_table):
+        idx = self.name_column_index(prize_table)
+        second = node_from_class(prize_table, "background-color-second-place")
+        if "TBD" in second.text:
+            """ Don't bother if the results aren't in."""
+        second_columns = second.find_all("td")
+        links = second_columns[idx].find_all("a")
+        self.second_place = links[-1].text.strip()
+        third = next_tag(second)
+        third_columns = third.find_all("td")
+        if "2nd-3rd" in second_columns[0].text:
+            links = third_columns[0].find_all("a")
+            self.second_place = "{} - {}".format(self.second_place, links[-1].text.strip())
+        else:
+            links = third_columns[idx].find_all("a")
+            self.runners_up.append(links[-1].text.strip())
+
+
+    def load_runners_up(self, prize_table):
         """ Loads runners up."""
         try:
             # Might not have a third place (Wrang of Fire 3)
-            third = node_from_class(pool_table, "background-color-third-place")
+            third = node_from_class(prize_table, "background-color-third-place")
         except ParserError:
             return
         if "TBD" in third.text:
             """ Don't bother if the results aren't in."""
             return
         fourth = next_tag(third)
-        column_header = "Team" if self.team else "Player"
-        ths = pool_table.find_all("th", recursive=True)
-        for idx, th in enumerate(ths):
-            if column_header in th.text:
-                break
-
+        idx = self.name_column_index(prize_table)
         third_columns = third.find_all("td")
         links = third_columns[idx].find_all("a")
         self.runners_up.append(links[-1].text.strip())
@@ -146,6 +162,14 @@ class Tournament:
         else:
             links = fourth_columns[idx].find_all("a")
             self.runners_up.append(links[-1].text.strip())
+
+    def name_column_index(self, node):
+        """ Looks at the headers to find the approiate index for the name"""
+        column_header = "Team" if self.team else "Player"
+        ths = node.find_all("th", recursive=True)
+        for idx, th in enumerate(ths):
+            if column_header in th.text:
+                return idx
 
     def load_info_box(self, info_box):
         """ Parse information from info box"""
@@ -173,7 +197,8 @@ class Tournament:
         self.load_participants(divs[3].text)
         self.first_place = self.first_place_url = self.second_place = None
         self.load_first_place(divs[5])
-        self.load_second_place(divs[6])
+        if self.first_place:
+            self.load_second_place(divs[6])
 
     def load_header(self, row):
         """Load the first five attributes."""
@@ -209,7 +234,10 @@ class Tournament:
             return
         spans = div.find_all("span")
         try:
-            self.first_place = spans[-1].text.strip()
+            first_place = spans[-1].text.strip()
+            if not first_place or first_place == "TBD":
+                return
+            self.first_place = first_place
             url = spans[-1].a.attrs["href"]
             if "redlink" not in url:
                 self.first_place_url = url
@@ -222,7 +250,9 @@ class Tournament:
             return
         spans = div.find_all("span")
         try:
-            self.second_place = spans[-1].text.strip()
+            second_place = spans[-1].text.strip()
+            if second_place and second_place != "TBD":
+                self.second_place = second_place
         except (AttributeError, IndexError):
             pass
 
