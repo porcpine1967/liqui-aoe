@@ -23,6 +23,24 @@ def print_info(tournamentdict):
                                       tournament.start,
                                       tournament.end))
 
+def test_advanced_from_player(player_manager):
+    viper_url = "/ageofempires/TheViper"
+    tournaments = player_manager.tournaments(viper_url)
+    tournament = tournaments[1]
+    tournament.load_advanced(player_manager.loader)
+    assert tournament.name == "Winter Championship"
+    assert tournament.tier == "S-Tier"
+    assert tournament.game == "Age of Empires IV"
+    assert tournament.url == "/ageofempires/Winter_Championship"
+    assert tournament.end == date(2022, 1, 23)
+    assert tournament.prize == "$20,000\xa0USD"
+    assert not tournament.cancelled
+    assert tournament.first_place == "Hera"
+    assert tournament.first_place_url == "/ageofempires/Hera"
+    assert tournament.second_place == "MarineLorD"
+    assert tournament.runners_up[0] == "TheViper - Wam01"
+
+
 def test_viper(player_manager):
     """ Tests the viper's page."""
     viper_url = "/ageofempires/TheViper"
@@ -36,6 +54,7 @@ def test_viper(player_manager):
     assert tournament.team
     assert tournament.game == "Age of Empires II"
     assert tournament.url == "/ageofempires/GamerLegion_vs_White_Wolf_Palace/6"
+    assert tournament.loader_place == "2nd"
     
     tournament = tournaments[1]
                              
@@ -45,6 +64,7 @@ def test_viper(player_manager):
     assert not tournament.team
     assert tournament.game == "Age of Empires IV"
     assert tournament.url == "/ageofempires/Winter_Championship"
+    assert tournament.loader_place == "3\xa0-\xa04th"
     
 def test_trundo(player_manager):
     trundo_url = "/ageofempires/index.php?title=Trundo&action=edit&redlink=1"

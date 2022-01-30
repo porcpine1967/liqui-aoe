@@ -97,6 +97,7 @@ class Tournament:
         # Basic attributes (loaded from tournaments page)
         self.name = self.url = self.game = self.tier = self.prize = ""
         self.start = self.end = self.first_place = self.first_place_url = self.second_place = None
+        self.loader_place = None
         self.participant_count = -1
         self.cancelled = False
         self.series = None
@@ -116,6 +117,7 @@ class Tournament:
         """ Adds attributes from player_row."""
         tds = row.find_all("td")
         self.end = datetime.strptime(tds[0].text, "%Y-%m-%d").date()
+        self.loader_place = tds[1].font.text
         self.tier = tds[2].a.text
         self.team = tds[3].text.lower() == "team"
         self.game = tds[4].span.a.attrs["title"]
@@ -131,9 +133,25 @@ class Tournament:
         self.description = main.p.text.strip()
         self.load_info_box(node_from_class(main, "fo-nttax-infobox"))
         prize_table = node_from_class(main, "prizepooltable")
-        self.load_runners_up(prize_table)
+        if not self.first_place:
+            self.load_all_places(prize_table)
+        else:
+            self.load_runners_up(prize_table)
         if self.first_place and not self.second_place:
             self.load_second_third(prize_table)
+
+    def load_all_places(self, prize_table):
+        idx = self.name_column_index(prize_table)
+        first = node_from_class(prize_table, "background-color-first-place")
+        if "TBD" in first.text:
+            """ Don't bother if the results aren't in."""
+            return
+        first_columns = first.find_all("td")
+        links = first_columns[idx].find_all("a")
+        self.first_place = links[-1].text.strip()
+        self.first_place_url = links[-1].attrs["href"]
+        self.load_second_third(prize_table)
+        self.load_runners_up(prize_table)
 
     def load_second_third(self, prize_table):
         idx = self.name_column_index(prize_table)
@@ -143,14 +161,11 @@ class Tournament:
         second_columns = second.find_all("td")
         links = second_columns[idx].find_all("a")
         self.second_place = links[-1].text.strip()
-        third = next_tag(second)
-        third_columns = third.find_all("td")
         if "2nd-3rd" in second_columns[0].text:
+            third = next_tag(second)
+            third_columns = third.find_all("td")
             links = third_columns[0].find_all("a")
             self.second_place = "{} - {}".format(self.second_place, links[-1].text.strip())
-        else:
-            links = third_columns[idx].find_all("a")
-            self.runners_up.append(links[-1].text.strip())
 
 
     def load_runners_up(self, prize_table):
@@ -189,6 +204,8 @@ class Tournament:
         """ Parse information from info box"""
         for div in info_box.find_all("div"):
             try:
+                if not self.prize and div.div.text == "Prize pool:":
+                    self.prize = text_from_tag(div, "div")
                 if div.div.text == "Series:":
                     self.series = text_from_tag(div, "div")
                 if div.div.text in ("Organizer:", "Organizers:",):
