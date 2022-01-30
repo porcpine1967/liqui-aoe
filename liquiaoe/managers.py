@@ -113,7 +113,14 @@ class Tournament:
         return self.name
 
     def load_from_player(self, row):
-        pass
+        """ Adds attributes from player_row."""
+        tds = row.find_all("td")
+        self.end = datetime.strptime(tds[0].text, "%Y-%m-%d").date()
+        self.tier = tds[2].a.text
+        self.team = tds[3].text.lower() == "team"
+        self.game = tds[4].span.a.attrs["title"]
+        self.name = tds[5].text
+        self.url = tds[6].a.attrs["href"]
 
     def load_advanced(self, loader):
         """ Call the loader for self.url and parse."""

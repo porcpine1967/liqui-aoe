@@ -28,7 +28,24 @@ def test_viper(player_manager):
     viper_url = "/ageofempires/TheViper"
     tournaments = player_manager.tournaments(viper_url)
     assert len(tournaments) == 214
-
+    tournament = tournaments[0]
+                             
+    assert tournament.name == "GamerLegion vs White Wolf Palace (6)"
+    assert tournament.end == date(2022, 1, 24)
+    assert tournament.tier == "Show\xa0M."
+    assert tournament.team
+    assert tournament.game == "Age of Empires II"
+    assert tournament.url == "/ageofempires/GamerLegion_vs_White_Wolf_Palace/6"
+    
+    tournament = tournaments[1]
+                             
+    assert tournament.name == "Winter Championship"
+    assert tournament.end == date(2022, 1, 23)
+    assert tournament.tier == "S-Tier"
+    assert not tournament.team
+    assert tournament.game == "Age of Empires IV"
+    assert tournament.url == "/ageofempires/Winter_Championship"
+    
 def test_trundo(player_manager):
     trundo_url = "/ageofempires/index.php?title=Trundo&action=edit&redlink=1"
     
