@@ -51,6 +51,7 @@ def test_viper(player_manager):
     assert tournament.name == "GamerLegion vs White Wolf Palace (6)"
     assert tournament.end == date(2022, 1, 24)
     assert tournament.tier == "Show\xa0M."
+    assert tournament.player_prize == "$80"
     assert tournament.team
     assert tournament.game == "Age of Empires II"
     assert tournament.url == "/ageofempires/GamerLegion_vs_White_Wolf_Palace/6"
@@ -61,6 +62,7 @@ def test_viper(player_manager):
     assert tournament.name == "Winter Championship"
     assert tournament.end == date(2022, 1, 23)
     assert tournament.tier == "S-Tier"
+    assert tournament.player_prize == "$1,500"
     assert not tournament.team
     assert tournament.game == "Age of Empires IV"
     assert tournament.url == "/ageofempires/Winter_Championship"
