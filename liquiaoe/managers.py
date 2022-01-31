@@ -10,9 +10,9 @@ PARTICIPANTS = re.compile(r"([0-9]+)")
 
 
 class TournamentManager:
-    def __init__(self, loader):
+    def __init__(self, loader, url="/ageofempires/Portal:Tournaments"):
         self._tournaments = []
-        self.url = "/ageofempires/Portal:Tournaments"
+        self.url = url
         self.loader = loader
         self.load()
 
@@ -44,23 +44,30 @@ class TournamentManager:
     def load(self):
         """Parses information in loader and adds to _tournaments."""
         data = self.loader.soup(self.url)
-        start = None
-        for h3 in data.find_all("h3"):
-            if "S-Tier" in h3.text:
-                start = h3
-        rows = None
-        while not rows:
-            start = start.next_sibling
+        
+        start = node_from_class(data, "tournament-card")
+        loaded = set()
+        while start:
             try:
-                if "tournament-card" in start.attrs["class"]:
-                    rows = start.find_all("div")
-            except AttributeError:
-                pass
-        for row in rows:
-            if "divRow" in row.attrs["class"]:
-                tournament = Tournament()
-                tournament.load_from_portal(row)
-                self._tournaments.append(tournament)
+                if "tournament-card" not in start.attrs["class"]:
+                    start = start.next_sibling
+                    continue
+            except (AttributeError, KeyError):
+                start = start.next_sibling
+                continue
+                
+            rows = start.find_all("div")
+            for row in rows:
+                if "divRow" in row.attrs["class"]:
+                    tournament = Tournament()
+                    tournament.load_from_portal(row)
+                    if tournament.url in loaded:
+                        continue
+                    loaded.add(tournament.url)
+                    if not tournament.tier:
+                        break
+                    self._tournaments.append(tournament)
+            start = start.next_sibling
 
 def node_from_class(ancestor, class_attribute):
     for node in ancestor.descendants:

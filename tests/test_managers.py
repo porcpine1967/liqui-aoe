@@ -13,15 +13,9 @@ def tournament_manager():
 def player_manager():
     return PlayerManager(VcrLoader())
 
-def print_info(tournamentdict):
-    for game, tournaments in tournamentdict.items():
-        print("*"*25)
-        print(game)
-        print("*"*25)
-        for tournament in tournaments:
-            print("{:25}: {} - {}".format(tournament.name,
-                                      tournament.start,
-                                      tournament.end))
+def print_info(tournaments):
+    for idx, tournament in enumerate(tournaments):
+        print("{:2}. {}".format(idx, tournament.name))
 
 def test_advanced_from_player(player_manager):
     viper_url = "/ageofempires/TheViper"
@@ -105,7 +99,7 @@ def test_tournaments(tournament_manager):
     """Make sure tournament manager loads tournaments correctly."""
     assert len(tournament_manager.all()) == 60
     tournaments = tournament_manager.all()
-    tournament = tournaments[0]
+    tournament = tournaments[3]
     assert tournament.tier == "B-Tier"
     assert tournament.game == "Age of Empires II"
     assert tournament.name == "Ayre Masters Series II: Arabia"
@@ -118,10 +112,10 @@ def test_tournaments(tournament_manager):
     assert tournament.first_place == None
     assert tournament.second_place == None
 
-    assert tournaments[3].end == date(2022, 3, 27)
-    assert tournaments[13].start == date(2021, 12, 13)
-    assert tournaments[13].end == date(2022, 2, 20)
-    assert tournaments[18].start == tournaments[18].end == date(2022, 2, 8)
+    assert tournaments[6].end == date(2022, 3, 27)
+    assert tournaments[16].start == date(2021, 12, 13)
+    assert tournaments[16].end == date(2022, 2, 20)
+    assert tournaments[21].start == tournaments[21].end == date(2022, 2, 8)
 
     assert tournaments[56].first_place == "Garnath"
     assert tournaments[56].first_place_url == "/ageofempires/Garnath"
@@ -133,7 +127,7 @@ def test_tournaments(tournament_manager):
 
 def test_team_tournament(tournament_manager):
     tournaments = tournament_manager.all()
-    tournament = tournaments[36]
+    tournament = tournaments[1]
     assert tournament.name == "Samedo's Civilization Cup 2021"
     tournament.load_advanced(tournament_manager.loader)
     assert tournament.description == "Samedo's Civilization Cup 2021 is an Age of Empires II 2v2 tournament organized by Samedo-sama."
@@ -179,7 +173,7 @@ def test_single_fourth_place(tournament_manager):
 
 def test_series_tournament(tournament_manager):
     tournaments = tournament_manager.all()
-    tournament = tournaments[0]
+    tournament = tournaments[3]
     assert tournament.name == "Ayre Masters Series II: Arabia"
     tournament.load_advanced(tournament_manager.loader)
     assert tournament.description == "The Ayre Masters Series II: Arabia is an Age of Empires II 1v1 tournament hosted by Ayre Esports. It is the third event of the Ayre Pro Tour."
@@ -187,7 +181,7 @@ def test_series_tournament(tournament_manager):
 
 def test_multiple_organizers(tournament_manager):
     tournaments = tournament_manager.all()
-    tournament = tournaments[13]
+    tournament = tournaments[16]
     assert tournament.name == "Master of HyperRandom"
     tournament.load_advanced(tournament_manager.loader)
     assert len(tournament.organizers) == 2
@@ -195,7 +189,7 @@ def test_multiple_organizers(tournament_manager):
 
 def test_multiple_organizers_no_links(tournament_manager):
     tournaments = tournament_manager.all()
-    tournament = tournaments[1]
+    tournament = tournaments[4]
     assert tournament.name == "Torneo Nacional Español 2021"
     tournament.load_advanced(tournament_manager.loader)
     assert len(tournament.organizers) == 4
@@ -203,9 +197,16 @@ def test_multiple_organizers_no_links(tournament_manager):
 def test_second_third_place(tournament_manager):
     tournaments = tournament_manager.all()
 
-    tournament = tournaments[30]
+    tournament = tournaments[33]
     assert tournament.name == "Wrang of Fire 3"
     # Set because easier than messing with vcr
     tournament.first_place = "Trundo"
     tournament.load_advanced(tournament_manager.loader)
     assert tournament.second_place == "Enzberg - Joey the Bonqueror"
+
+def test_load_alternate_portal():
+    tournament_manager = TournamentManager(VcrLoader(), "/ageofempires/Age_of_Empires_IV/Tournaments")
+    tournaments = tournament_manager.all()
+    assert len(tournaments) == 91
+    assert tournaments[44].name == "Secret Invitational"
+    assert tournaments[44].cancelled
