@@ -134,7 +134,7 @@ class Tournament:
         self.description = main.p.text.strip()
         self.load_info_box(node_from_class(main, "fo-nttax-infobox"))
         prize_table = node_from_class(main, "prizepooltable")
-        if not self.first_place:
+        if not self.first_place or self.team:
             self.load_all_places(prize_table)
         else:
             self.load_runners_up(prize_table)
@@ -149,10 +149,51 @@ class Tournament:
             return
         first_columns = first.find_all("td")
         links = first_columns[idx].find_all("a")
-        self.first_place = links[-1].text.strip()
-        self.first_place_url = links[-1].attrs["href"]
-        self.load_second_third(prize_table)
+        if self.team:
+            first_place = links[-1].text.strip()
+            members = self.team_members(first_place, prize_table)
+            self.first_place = self.team_name_from_node(first, idx)
+            second = node_from_class(prize_table, "background-color-second-place")
+            self.second_place = self.team_name_from_node(second, idx)
+
+        else:
+            self.first_place = links[-1].text.strip()
+            self.first_place_url = links[-1].attrs["href"]
+            self.load_second_third(prize_table)
         self.load_runners_up(prize_table)
+
+    def team_name_from_node(self, node, column_index):
+            columns = node.find_all("td")
+            links = columns[column_index].find_all("a")
+            team_name = links[-1].text.strip()
+            members = self.team_members(team_name, node.parent.parent)
+            return "{} ({})".format(team_name,
+                                    ", ".join(members))
+
+    def team_members(self, team_name, node):
+        team_column = node_from_class(node.parent.parent, "template-box")
+
+        while team_column:
+            team = node_from_class(team_column, "template-box")
+            while team:
+                team_dict = self.team_info(team)
+                if team_dict["name"] == team_name:
+                    return team_dict["members"]
+                team = team.next_sibling
+            team_column = team_column.next_sibling
+        return []
+
+    def team_info(self, node):
+        team_node = node_from_class(node, "teamcard")
+        team_dict = dict()
+        team_dict["name"] = team_node.center.text
+        team_dict["members"] = []
+        member_row = team_node.div.table.tr
+        while member_row:
+            tds = member_row.find_all("td")
+            team_dict["members"].append(tds[-1].text.strip())
+            member_row = member_row.next_sibling
+        return team_dict
 
     def load_second_third(self, prize_table):
         idx = self.name_column_index(prize_table)
@@ -303,6 +344,6 @@ class PlayerManager:
                 tournament.load_from_player(node)
                 player_tournaments.append(tournament)
         return player_tournaments
-        
+
 class ParserError(Exception):
     """ What to throw if something critical missing from soup."""

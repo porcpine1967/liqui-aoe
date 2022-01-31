@@ -142,6 +142,8 @@ def test_team_tournament(tournament_manager):
     assert tournament.game_mode == "Random Map"
     assert tournament.format_style == "2v2, Single Elimination"
     assert tournament.team
+    assert tournament.first_place == "oSetinhas & OMurchu (oSetinhas, OMurchu)"
+    assert tournament.second_place == "Andorin & TheRenano (Andorin, TheRenano)"
     assert len(tournament.runners_up) == 2
     assert tournament.runners_up[0] == "Sommos & Lacrima"
     assert tournament.runners_up[1] == "Target331 & Kloerb"
