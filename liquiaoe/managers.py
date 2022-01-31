@@ -95,7 +95,7 @@ def next_tag(first_tag):
 class Tournament:
     def __init__(self):
         # Basic attributes (loaded from tournaments page)
-        self.name = self.url = self.game = self.tier = self.prize = self.player_prize = ""
+        self.name = self.url = self.game = self.tier = self.prize = self.loader_prize = ""
         self.start = self.end = self.first_place = self.first_place_url = self.second_place = None
         self.loader_place = None
         self.participant_count = -1
@@ -123,7 +123,7 @@ class Tournament:
         self.game = tds[4].span.a.attrs["title"]
         self.name = tds[5].text
         self.url = tds[6].a.attrs["href"]
-        self.player_prize = tds[10].text
+        self.loader_prize = tds[10].text
 
     def load_advanced(self, loader):
         """ Call the loader for self.url and parse."""
