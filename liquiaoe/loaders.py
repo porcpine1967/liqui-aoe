@@ -31,6 +31,7 @@ class HttpsLoader:
 
     def soup(self, path):
         # Per liquipedia api terms of use, parse requires 30 second throttle
+        print("CALLING: {}".format(path))
         if self.last_call + self.throttle(path) > time.time():
             time.sleep(self.last_call + self.throttle(path) - time.time())
         url = self._base_url.format(tail(path))

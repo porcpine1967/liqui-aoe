@@ -15,7 +15,8 @@ def player_manager():
 
 def print_info(tournaments):
     for idx, tournament in enumerate(tournaments):
-        print("{:2}. {}".format(idx, tournament.name))
+        print("{:2}. {} (https://liquipedia.net{})".format(idx, tournament.name,
+                                                           tournament.url))
 
 def test_advanced_from_player(player_manager):
     viper_url = "/ageofempires/TheViper"
@@ -41,7 +42,7 @@ def test_viper(player_manager):
     tournaments = player_manager.tournaments(viper_url)
     assert len(tournaments) == 214
     tournament = tournaments[0]
-                             
+
     assert tournament.name == "GamerLegion vs White Wolf Palace (6)"
     assert tournament.end == date(2022, 1, 24)
     assert tournament.tier == "Show\xa0M."
@@ -50,9 +51,9 @@ def test_viper(player_manager):
     assert tournament.game == "Age of Empires II"
     assert tournament.url == "/ageofempires/GamerLegion_vs_White_Wolf_Palace/6"
     assert tournament.loader_place == "2nd"
-    
+
     tournament = tournaments[1]
-                             
+
     assert tournament.name == "Winter Championship"
     assert tournament.end == date(2022, 1, 23)
     assert tournament.tier == "S-Tier"
@@ -61,10 +62,10 @@ def test_viper(player_manager):
     assert tournament.game == "Age of Empires IV"
     assert tournament.url == "/ageofempires/Winter_Championship"
     assert tournament.loader_place == "3\xa0-\xa04th"
-    
+
 def test_trundo(player_manager):
     trundo_url = "/ageofempires/index.php?title=Trundo&action=edit&redlink=1"
-    
+
     tournaments = player_manager.tournaments(trundo_url)
     assert len(tournaments) == 0
 
@@ -99,6 +100,7 @@ def test_tournaments(tournament_manager):
     """Make sure tournament manager loads tournaments correctly."""
     assert len(tournament_manager.all()) == 60
     tournaments = tournament_manager.all()
+    print_info(tournaments)
     tournament = tournaments[3]
     assert tournament.tier == "B-Tier"
     assert tournament.game == "Age of Empires II"
@@ -142,10 +144,15 @@ def test_team_tournament(tournament_manager):
     assert tournament.runners_up[0] == "Sommos & Lacrima"
     assert tournament.runners_up[1] == "Target331 & Kloerb"
 
+def test_other_team_tournament(tournament_manager):
+    tournaments = tournament_manager.all()
+    tournament = tournaments[40]
+    assert tournament.name == "AoE4 Pro League"
+    tournament.load_advanced(tournament_manager.loader)
+    print(tournament.first_place)
 
 def test_simple_tournament(tournament_manager):
     tournaments = tournament_manager.all()
-
     tournament = tournaments[39]
 
     assert tournament.name == "King of the African Clearing"
@@ -210,3 +217,16 @@ def test_load_alternate_portal():
     assert len(tournaments) == 91
     assert tournaments[44].name == "Secret Invitational"
     assert tournaments[44].cancelled
+
+def test_index_out_of_range():
+    tournament_manager = TournamentManager(VcrLoader(), "/ageofempires/Age_of_Empires_II/Tournaments/Pre_2020")
+    tournaments = tournament_manager.all()
+    tests = (
+        (94, "Rusaoc Cup 30"),
+        (111, "King of the Hippo 7"),
+        (126, "EscapeTV Launch Event"),
+    )
+    for idx, name in tests:
+        tournament = tournaments[idx]
+        assert tournament.name == name
+        tournament.load_advanced(tournament_manager.loader)

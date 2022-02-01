@@ -93,7 +93,7 @@ def div_attributes(parent):
 
 def next_tag(first_tag):
     sibling = first_tag.next_sibling
-    while True:
+    while sibling:
         if isinstance(sibling, bs4.element.Tag):
             return sibling
         sibling = sibling.next_sibling
@@ -138,7 +138,10 @@ class Tournament:
         main = node_from_class(soup, "mw-parser-output")
         if not main:
             raise ParserError("No mw-parser-output in soup")
-        self.description = main.p.text.strip()
+        try:
+            self.description = main.p.text.strip()
+        except AttributeError:
+            self.description = ""
         self.load_info_box(node_from_class(main, "fo-nttax-infobox"))
         prize_table = node_from_class(main, "prizepooltable")
         if not self.first_place or self.team:
@@ -159,8 +162,11 @@ class Tournament:
         if self.team:
             first_place = links[-1].text.strip()
             self.first_place = self.team_name_from_node(first, idx)
-            second = node_from_class(prize_table, "background-color-second-place")
-            self.second_place = self.team_name_from_node(second, idx)
+            try:
+                second = node_from_class(prize_table, "background-color-second-place")
+                self.second_place = self.team_name_from_node(second, idx)
+            except (IndexError, ParserError):
+                pass
 
         else:
             self.first_place = links[-1].text.strip()
@@ -176,7 +182,7 @@ class Tournament:
                 members = self.team_members(team_name, node.parent.parent)
                 return "{} ({})".format(team_name,
                                         ", ".join(members))
-            except ParserError:
+            except (IndexError, ParserError):
                 return team_name
 
     def team_members(self, team_name, node):
@@ -206,9 +212,13 @@ class Tournament:
 
     def load_second_third(self, prize_table):
         idx = self.name_column_index(prize_table)
-        second = node_from_class(prize_table, "background-color-second-place")
+        try:
+            second = node_from_class(prize_table, "background-color-second-place")
+        except ParserError:
+            return
         if "TBD" in second.text:
             """ Don't bother if the results aren't in."""
+            return
         second_columns = second.find_all("td")
         links = second_columns[idx].find_all("a")
         self.second_place = links[-1].text.strip()
@@ -229,19 +239,23 @@ class Tournament:
         if "TBD" in third.text:
             """ Don't bother if the results aren't in."""
             return
-        fourth = next_tag(third)
         idx = self.name_column_index(prize_table)
         third_columns = third.find_all("td")
         links = third_columns[idx].find_all("a")
         self.runners_up.append(links[-1].text.strip())
-
+        fourth = next_tag(third)
+        if not fourth:
+            return
         fourth_columns = fourth.find_all("td")
-        if "3rd-4th" in third_columns[0].text or len(fourth_columns) < idx:
+        if "3rd-4th" in third_columns[0].text or len(fourth_columns) <= idx:
             links = fourth_columns[0].find_all("a")
             self.runners_up[0] = "{} - {}".format(self.runners_up[0], links[-1].text.strip())
         else:
             links = fourth_columns[idx].find_all("a")
-            self.runners_up.append(links[-1].text.strip())
+            try:
+                self.runners_up.append(links[-1].text.strip())
+            except IndexError:
+                pass
 
     def name_column_index(self, node):
         """ Looks at the headers to find the approiate index for the name"""
@@ -270,7 +284,10 @@ class Tournament:
                     self.game_mode = text_from_tag(div, "div")
                 if div.div.text == "Format:":
                     self.format_style = text_from_tag(div, "div")
-                    self.team = "2v2" in self.format_style or "1v1" not in self.format_style
+                    if 'FFA' or '1v1' in self.format_style:
+                        self.team = False
+                    if "2v2" in self.format_style:
+                        self.team = True
                 if div.div.text == "Sponsor(s):":
                     self.sponsors = div_attributes(div)
             except AttributeError:
