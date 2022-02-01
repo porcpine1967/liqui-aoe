@@ -230,3 +230,14 @@ def test_index_out_of_range():
         tournament = tournaments[idx]
         assert tournament.name == name
         tournament.load_advanced(tournament_manager.loader)
+
+def test_participants(tournament_manager):
+    tournaments = tournament_manager.all()
+    tournament = tournaments[25]
+    assert tournament.name == "Wandering Warriors Cup"
+    tournament.load_advanced(tournament_manager.loader)
+
+    assert len(tournament.participants) == 64
+    assert tournament.participants[0] == ("ACCM", "/ageofempires/ACCM",)
+    assert tournament.participants[-1] == ("_Tomate", None,)
+    

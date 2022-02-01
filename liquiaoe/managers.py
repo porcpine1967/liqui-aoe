@@ -109,6 +109,7 @@ class Tournament:
         self.cancelled = False
         self.series = None
         # Advanced (loaded from tournament page)
+        self.participants = []
         self.organizers = []
         self.sponsors = []
         self.game_mode = None
@@ -150,6 +151,33 @@ class Tournament:
             self.load_runners_up(prize_table)
         if self.first_place and not self.second_place:
             self.load_second_third(prize_table)
+        self.load_participants(main)
+        
+    def load_participants(self, node):
+        if self.team:
+            return
+        found = False
+        for h2 in node.find_all("h2", recursive=True):
+            if "Participants" in h2.text:
+                found = True
+                break
+        if not found:
+            return
+        participant_node = next_tag(h2)
+        try:
+            player_row = node_from_class(participant_node, "player-row")
+        except ParserError:
+            # nbd, just nothing there
+            return
+        while player_row:
+            for td in player_row.find_all("td"):
+                if not td.text:
+                    continue
+                span = td.find_all("span")[1]
+                href = span.a.attrs["href"]
+                href = None if "redlink" in href else href
+                self.participants.append((span.a.text, href,))
+            player_row = next_tag(player_row)
 
     def load_all_places(self, prize_table):
         idx = self.name_column_index(prize_table)
@@ -298,7 +326,7 @@ class Tournament:
         self.load_header(divs[0])
         self.load_dates(divs[1].text)
         self.prize = divs[2].text.strip()
-        self.load_participants(divs[3].text)
+        self.load_participant_count(divs[3].text)
         self.first_place = self.first_place_url = self.second_place = None
         self.load_first_place_from_row(divs[5])
         if self.first_place:
@@ -325,7 +353,7 @@ class Tournament:
             self.start = datetime.strptime(text.strip(), "%b %d, %Y").date()
             self.end = self.start
 
-    def load_participants(self, text):
+    def load_participant_count(self, text):
         match = PARTICIPANTS.match(text)
         if match:
             self.participant_count = int(match.group(1))
