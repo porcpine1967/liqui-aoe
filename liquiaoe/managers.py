@@ -44,7 +44,7 @@ class TournamentManager:
     def load(self):
         """Parses information in loader and adds to _tournaments."""
         data = self.loader.soup(self.url)
-        
+
         start = node_from_class(data, "tournament-card")
         loaded = set()
         while start:
@@ -55,7 +55,7 @@ class TournamentManager:
             except (AttributeError, KeyError):
                 start = start.next_sibling
                 continue
-                
+
             rows = start.find_all("div")
             for row in rows:
                 if "divRow" in row.attrs["class"]:
@@ -158,7 +158,6 @@ class Tournament:
         links = first_columns[idx].find_all("a")
         if self.team:
             first_place = links[-1].text.strip()
-            members = self.team_members(first_place, prize_table)
             self.first_place = self.team_name_from_node(first, idx)
             second = node_from_class(prize_table, "background-color-second-place")
             self.second_place = self.team_name_from_node(second, idx)
@@ -173,9 +172,12 @@ class Tournament:
             columns = node.find_all("td")
             links = columns[column_index].find_all("a")
             team_name = links[-1].text.strip()
-            members = self.team_members(team_name, node.parent.parent)
-            return "{} ({})".format(team_name,
-                                    ", ".join(members))
+            try:
+                members = self.team_members(team_name, node.parent.parent)
+                return "{} ({})".format(team_name,
+                                        ", ".join(members))
+            except ParserError:
+                return team_name
 
     def team_members(self, team_name, node):
         team_column = node_from_class(node.parent.parent, "template-box")
@@ -234,7 +236,7 @@ class Tournament:
         self.runners_up.append(links[-1].text.strip())
 
         fourth_columns = fourth.find_all("td")
-        if "3rd-4th" in third_columns[0].text:
+        if "3rd-4th" in third_columns[0].text or len(fourth_columns) < idx:
             links = fourth_columns[0].find_all("a")
             self.runners_up[0] = "{} - {}".format(self.runners_up[0], links[-1].text.strip())
         else:
@@ -245,6 +247,11 @@ class Tournament:
         """ Looks at the headers to find the approiate index for the name"""
         column_header = "Team" if self.team else "Player"
         ths = node.find_all("th", recursive=True)
+        for idx, th in enumerate(ths):
+            if column_header in th.text:
+                return idx
+        # Try the other
+        column_header = "Team" if not self.team else "Player"
         for idx, th in enumerate(ths):
             if column_header in th.text:
                 return idx
@@ -263,7 +270,7 @@ class Tournament:
                     self.game_mode = text_from_tag(div, "div")
                 if div.div.text == "Format:":
                     self.format_style = text_from_tag(div, "div")
-                    self.team = "1v1" not in self.format_style
+                    self.team = "2v2" in self.format_style or "1v1" not in self.format_style
                 if div.div.text == "Sponsor(s):":
                     self.sponsors = div_attributes(div)
             except AttributeError:

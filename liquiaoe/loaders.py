@@ -6,7 +6,7 @@ import time
 from bs4 import BeautifulSoup
 import requests
 import vcr
-THROTTLE = 5
+THROTTLE = 32
 CASSETTE_DIR = "{}/tests/vcr_cassettes".format(pathlib.Path(__file__).parent.parent.resolve())
 
 def tail(path):
@@ -23,8 +23,7 @@ class HttpsLoader:
         self._headers = {"User-Agent": "liqui-aoe/0.1 (feroc.felix@gmail.com)","Accept-Encoding": "gzip"}
         self._base_url = "https://liquipedia.net/ageofempires/api.php?redirects=true&action=parse&format=json&page={}"
 
-    @property
-    def throttle(self):
+    def throttle(self, _):
         return THROTTLE
 
     def available(self, tail):
@@ -32,8 +31,8 @@ class HttpsLoader:
 
     def soup(self, path):
         # Per liquipedia api terms of use, parse requires 30 second throttle
-        if self.last_call + self.throttle > time.time():
-            time.sleep(self.last_call + self.throttle - time.time())
+        if self.last_call + self.throttle(path) > time.time():
+            time.sleep(self.last_call + self.throttle(path) - time.time())
         url = self._base_url.format(tail(path))
         response = self.fetch_response(url, path)
         self.last_call = time.time()
@@ -59,9 +58,11 @@ class VcrLoader(HttpsLoader):
     def available(self, path):
         return os.path.exists(cassette(path))
 
-    @property
-    def throttle(self):
-        return 0
+    def throttle(self, path):
+        if self.available(path):
+            return 0
+        else:
+            return THROTTLE
 
 class RequestsException(Exception):
 
