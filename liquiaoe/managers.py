@@ -8,6 +8,7 @@ import bs4
 
 PARTICIPANTS = re.compile(r"([0-9]+)")
 
+from liquiaoe.loaders import RequestsException
 
 class TournamentManager:
     def __init__(self, loader, url="/ageofempires/Portal:Tournaments"):
@@ -17,20 +18,23 @@ class TournamentManager:
         self.load()
 
     def completed(self, timebox):
+        """ Makes sure the end_date is between the dates."""
         tournaments = defaultdict(list)
         for tournament in self._tournaments:
             if  timebox[0] <= tournament.end <= timebox[1]:
                 tournaments[tournament.game].append(tournament)
         return tournaments
 
-    def ongoing(self, timebox):
+    def ongoing(self, timestamp):
+        """ Makes sure the tournament starts before and ends after timestamp."""
         tournaments = defaultdict(list)
         for tournament in self._tournaments:
-            if  tournament.start <= timebox[0] and timebox[1] <= tournament.end:
+            if  tournament.start <= timestamp <= tournament.end:
                 tournaments[tournament.game].append(tournament)
         return tournaments
 
     def starting(self, timebox):
+        """ Makes sure the start date is between the dates."""
         tournaments = defaultdict(list)
         for tournament in self._tournaments:
             if  timebox[0] <= tournament.start <= timebox[1]:
@@ -395,7 +399,13 @@ class PlayerManager:
         if "index" in player_url:
             return player_tournaments
         url = "{}/Results".format(player_url)
-        data = self.loader.soup(url)
+        try:
+            data = self.loader.soup(url)
+        except (RequestsException) as ex:
+            if ex.code == 404:
+                data = self.loader.soup(player_url)
+            else:
+                raise
         results_table = node_from_class(data, "wikitable")
         for node in results_table.descendants:
             if node.name == "tr" and len(node.find_all("td")) == 11:

@@ -14,7 +14,10 @@ def tail(path):
     return path.split("/", 2)[-1]
 
 def cassette(path):
-    return "{}/{}".format(CASSETTE_DIR, tail(path))
+    cassette_path = "{}/{}".format(CASSETTE_DIR, tail(path))
+    if os.path.isdir(cassette_path):
+        return cassette(path + "/index")
+    return cassette_path
 
 class HttpsLoader:
     """ Object for downloading date from liquipedia."""
@@ -31,16 +34,23 @@ class HttpsLoader:
 
     def soup(self, path):
         # Per liquipedia api terms of use, parse requires 30 second throttle
+        print("CALLING: {}".format(path))
         if self.last_call + self.throttle(path) > time.time():
             time.sleep(self.last_call + self.throttle(path) - time.time())
         url = self._base_url.format(tail(path))
         response = self.fetch_response(url, path)
         self.last_call = time.time()
         if response.status_code == 200:
+            info = response.json()
             try:
-                page_html = response.json()['parse']['text']['*']
+                page_html = info['parse']['text']['*']
                 return BeautifulSoup(page_html, "html.parser")
             except KeyError:
+                try:
+                    if info["error"]["code"] == "missingtitle":
+                        raise RequestsException(response.text, 404)
+                except KeyError:
+                    pass
                 raise RequestsException(response.text, response.status_code)    
         else:
             raise RequestsException(response.text, response.status_code)
@@ -66,6 +76,6 @@ class VcrLoader(HttpsLoader):
 
 class RequestsException(Exception):
 
-    def init(self, message, code=500):
-        super(RequestsException, self).init(message)
+    def __init__(self, message, code=500):
         self.code = code
+        super().__init__(message)

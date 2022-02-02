@@ -69,6 +69,14 @@ def test_trundo(player_manager):
     tournaments = player_manager.tournaments(trundo_url)
     assert len(tournaments) == 0
 
+def test_load_from_player_main_page(player_manager):
+    kongensgade_url = "/ageofempires/Kongensgade"
+    tournaments = player_manager.tournaments(kongensgade_url)
+    assert len(tournaments) == 10
+    tournament = tournaments[-1]
+    assert tournament.name == "The Medieval Wars 2013"
+    assert tournament.loader_place == "17\xa0-\xa032nd"
+
 def test_completed(tournament_manager):
     """ Tests tournament filter."""
     timebox = (date(2022, 1, 26), date(2022, 2, 1),)
@@ -89,10 +97,10 @@ def test_starting(tournament_manager):
 
 def test_ongoing(tournament_manager):
     """ Tests tournament filter."""
-    timebox = (date(2022, 1, 26), date(2022, 2, 1),)
-    ongoing_tournaments = tournament_manager.ongoing(timebox)
-    assert len(ongoing_tournaments["Age of Empires II"]) == 6
-    assert len(ongoing_tournaments["Age of Empires IV"]) == 1
+    timestamp = date(2022, 1, 26)
+    ongoing_tournaments = tournament_manager.ongoing(timestamp)
+    assert len(ongoing_tournaments["Age of Empires II"]) == 11
+    assert len(ongoing_tournaments["Age of Empires IV"]) == 4
     assert len(ongoing_tournaments["Age of Empires Online"]) == 0
     assert len(ongoing_tournaments["Age of Mythology"]) == 2
 
@@ -240,4 +248,3 @@ def test_participants(tournament_manager):
     assert len(tournament.participants) == 64
     assert tournament.participants[0] == ("ACCM", "/ageofempires/ACCM",)
     assert tournament.participants[-1] == ("_Tomate", None,)
-    
