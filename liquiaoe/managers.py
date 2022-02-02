@@ -155,9 +155,10 @@ class Tournament:
             self.load_runners_up(prize_table)
         if self.first_place and not self.second_place:
             self.load_second_third(prize_table)
-        self.load_participants(main)
+        self.load_participants(main, prize_table)
         
-    def load_participants(self, node):
+    def load_participants(self, node, prize_table):
+        placers = prize_table.text
         if self.team:
             return
         found = False
@@ -178,9 +179,10 @@ class Tournament:
                 if not td.text:
                     continue
                 span = td.find_all("span")[1]
+                name = span.a.text
                 href = span.a.attrs["href"]
                 href = None if "redlink" in href else href
-                self.participants.append((span.a.text, href,))
+                self.participants.append((name, href, name in placers))
             player_row = next_tag(player_row)
 
     def load_all_places(self, prize_table):

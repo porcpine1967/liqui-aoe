@@ -214,8 +214,6 @@ def test_second_third_place(tournament_manager):
 
     tournament = tournaments[33]
     assert tournament.name == "Wrang of Fire 3"
-    # Set because easier than messing with vcr
-    tournament.first_place = "Trundo"
     tournament.load_advanced(tournament_manager.loader)
     assert tournament.second_place == "Enzberg - Joey the Bonqueror"
 
@@ -246,5 +244,17 @@ def test_participants(tournament_manager):
     tournament.load_advanced(tournament_manager.loader)
 
     assert len(tournament.participants) == 64
-    assert tournament.participants[0] == ("ACCM", "/ageofempires/ACCM",)
-    assert tournament.participants[-1] == ("_Tomate", None,)
+    assert tournament.participants[0] == ("ACCM", "/ageofempires/ACCM", True)
+    assert tournament.participants[5] == ("Capoch", "/ageofempires/Capoch", False)
+    assert tournament.participants[-1] == ("_Tomate", None, True)
+
+def test_participants_placed(tournament_manager):
+    tournaments = tournament_manager.all()
+
+    tournament = tournaments[33]
+    assert tournament.name == "Wrang of Fire 3"
+    
+    tournament.load_advanced(tournament_manager.loader)
+    assert tournament.participants[0] == ("ACCM", "/ageofempires/ACCM", False)
+    assert tournament.participants[7] == ("Enzberg", None, True)
+    assert tournament.participants[15] == ("Modri", "/ageofempires/Modri", True)
