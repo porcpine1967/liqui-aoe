@@ -258,3 +258,28 @@ def test_participants_placed(tournament_manager):
     assert tournament.participants[0] == ("ACCM", "/ageofempires/ACCM", False)
     assert tournament.participants[7] == ("Enzberg", None, True)
     assert tournament.participants[15] == ("Modri", "/ageofempires/Modri", True)
+
+def test_brackets(tournament_manager):
+    tournaments = tournament_manager.all()
+    tournament = tournaments[25]
+    assert tournament.name == "Wandering Warriors Cup"
+    tournament.load_advanced(tournament_manager.loader)
+
+    assert len(tournament.rounds) == 6
+
+    assert len(tournament.rounds[0]) == 32
+
+    match = tournament.rounds[0][5]
+    assert match["played"]
+    assert match["winner"] == "The_Dragonstar"
+    assert match["loser"] == "Faraday"
+    assert match["winner_url"] == "/ageofempires/The_Dragonstar"
+    assert match["loser_url"] == "/ageofempires/Faraday"
+
+    match = tournament.rounds[0][6]
+    assert not match["played"]
+    assert match["winner"] == "Liereyy"
+    assert match["loser"] == "_Tomate"
+    assert match["winner_url"] == "/ageofempires/Liereyy"
+    assert match["loser_url"] == None
+

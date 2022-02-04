@@ -121,6 +121,7 @@ class Tournament:
         self.description = None
         self.team = False
         self.runners_up = []
+        self.rounds = []
 
     def __str__(self):
         return self.name
@@ -156,7 +157,53 @@ class Tournament:
         if self.first_place and not self.second_place:
             self.load_second_third(prize_table)
         self.load_participants(main, prize_table)
+        try:
+            self.load_bracket(node_from_class(main, "bracket"))
+        except ParserError:
+            pass
+
+    def load_bracket(self, node):
+        for bracket_round in node.find_all("div"):
+            try:
+                if "bracket-column-matches" in bracket_round.attrs["class"]:
+                    self.load_round(bracket_round)
+            except KeyError:
+                pass
+
+    def load_round(self, node):
+        matches = []
+        for match in node.find_all("div"):
+            try:
+                if "bracket-game" in match.attrs["class"]:
+                    matches.append(self.load_match(match))
+            except KeyError:
+                pass
+        self.rounds.append(matches)
         
+    def load_match(self, node):
+        match = {"played": True, "winner": None, "loser": None,
+                 "winner_url": None, "loser_url": None,}
+        urls = defaultdict(lambda: None)
+        for div in node.find_all("div"):
+            try:
+                if "bracket-cell-r1" in div.attrs["class"]:
+                    key = "winner" if "font-weight:bold" == div.attrs["style"] else "loser"
+                    for string in div.stripped_strings:
+                        match[key] = string
+                        break
+                if "bracket-popup-header-vs-child" in div.attrs["class"]:
+                    for a in div.find_all("a"):
+                        href = a.attrs["href"]
+                        if not "redlink" in href:
+                            urls[a.text] = href
+                if "bracket-score" in div.attrs["class"]:
+                    if div.text in ("W", "FF"):
+                        match["played"] = False
+            except (KeyError, AttributeError):
+                pass
+        match["winner_url"] = urls[match["winner"]]
+        match["loser_url"] = urls[match["loser"]]
+        return match
     def load_participants(self, node, prize_table):
         placers = prize_table.text
         if self.team:

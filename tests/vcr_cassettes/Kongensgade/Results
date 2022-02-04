@@ -1,0 +1,65 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip
+      Connection:
+      - keep-alive
+      User-Agent:
+      - liqui-aoe/0.1 (feroc.felix@gmail.com)
+    method: GET
+    uri: https://liquipedia.net/ageofempires/api.php?redirects=true&action=parse&format=json&page=Kongensgade/Results
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA22PO27DQAxEr0KwcIDAXvVylTJdAOcC9IpaEZbI9ZJCEhi+eyA1aVLPvPk8kFuz
+        hv0Dsw2MPS7iLlpCYmY8ouho2OPnxFCpMPzYCl45yyg8wGDs+hLA3+KR8Iiv2OOFGaaI6n3XzXJf
+        pfIglJSjo8I28lKlsXdUJdWpwmgN3j7eYXUqnOCyXj03uTKEQUwMy4Z/yU1OVOVEqrZqZlhIZtEC
+        s3gABRzmOP/VenjamB1O1kq3+RfSXdtedf/nHkqc90lqIZnBxn3cwLVxphBTB9IBro3ptvXnibSw
+        J3w+fwEuoTIwTgEAAA==
+    headers:
+      Accept-Ranges:
+      - bytes
+      Age:
+      - '0'
+      Cache-Control:
+      - private, must-revalidate, max-age=0
+      Connection:
+      - keep-alive
+      Content-Disposition:
+      - inline; filename=api-result.json
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Fri, 04 Feb 2022 19:42:19 GMT
+      MediaWiki-API-Error:
+      - missingtitle
+      Referrer-Policy:
+      - no-referrer-when-downgrade
+      Server:
+      - nginx
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding
+      Via:
+      - 1.1 varnish (Varnish/6.5)
+      X-Cache:
+      - MISS
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - DENY
+      X-Request-Id:
+      - c9981eff118dde4f13e9b034
+      X-XSS-Protection:
+      - 1; mode=block
+    status:
+      code: 200
+      message: OK
+version: 1
