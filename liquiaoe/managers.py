@@ -52,17 +52,13 @@ class TournamentManager:
         start = node_from_class(data, "tournament-card")
         loaded = set()
         while start:
-            try:
-                if "tournament-card" not in start.attrs["class"]:
-                    start = start.next_sibling
-                    continue
-            except (AttributeError, KeyError):
+            if not class_in_node("tournament-card", start):
                 start = start.next_sibling
                 continue
 
             rows = start.find_all("div")
             for row in rows:
-                if "divRow" in row.attrs["class"]:
+                if class_in_node("divRow", row):
                     tournament = Tournament()
                     tournament.load_from_portal(row)
                     if tournament.url in loaded:
@@ -73,13 +69,20 @@ class TournamentManager:
                     self._tournaments.append(tournament)
             start = start.next_sibling
 
+def class_in_node(css_class, node):
+    try:
+        return css_class in node.attrs["class"]
+    except (AttributeError, KeyError):
+        return False
+
+def valid_href(anchor_tag):
+    href = anchor_tag.attrs["href"]
+    return None if "redlink" in href else href
+
 def node_from_class(ancestor, class_attribute):
     for node in ancestor.descendants:
-        try:
-            if class_attribute in node.attrs["class"]:
-                return node
-        except (AttributeError, KeyError):
-            pass
+        if class_in_node(class_attribute, node):
+            return node
     raise ParserError("{} missing".format(class_attribute))
 
 def text_from_tag(parent, tag):
@@ -164,20 +167,14 @@ class Tournament:
 
     def load_bracket(self, node):
         for bracket_round in node.find_all("div"):
-            try:
-                if "bracket-column-matches" in bracket_round.attrs["class"]:
-                    self.load_round(bracket_round)
-            except KeyError:
-                pass
+            if class_in_node("bracket-column-matches", bracket_round):
+                self.load_round(bracket_round)
 
     def load_round(self, node):
         matches = []
         for match in node.find_all("div"):
-            try:
-                if "bracket-game" in match.attrs["class"]:
-                    matches.append(self.load_match(match))
-            except KeyError:
-                pass
+            if class_in_node("bracket-game", match):
+                matches.append(self.load_match(match))
         self.rounds.append(matches)
         
     def load_match(self, node):
@@ -185,22 +182,18 @@ class Tournament:
                  "winner_url": None, "loser_url": None,}
         urls = defaultdict(lambda: None)
         for div in node.find_all("div"):
-            try:
-                if "bracket-cell-r1" in div.attrs["class"]:
-                    key = "winner" if "font-weight:bold" == div.attrs["style"] else "loser"
-                    for string in div.stripped_strings:
-                        match[key] = string
-                        break
-                if "bracket-popup-header-vs-child" in div.attrs["class"]:
-                    for a in div.find_all("a"):
-                        href = a.attrs["href"]
-                        if not "redlink" in href:
-                            urls[a.text] = href
-                if "bracket-score" in div.attrs["class"]:
-                    if div.text in ("W", "FF"):
-                        match["played"] = False
-            except (KeyError, AttributeError):
-                pass
+            if class_in_node("bracket-cell-r1", div):
+                key = "winner" if "font-weight:bold" == div.attrs["style"] else "loser"
+                for string in div.stripped_strings:
+                    match[key] = string
+                    break
+            if class_in_node("bracket-popup-header-vs-child", div):
+                for a in div.find_all("a"):
+                    urls[a.text] = valid_href(a)
+            if class_in_node("bracket-score", div):
+                if div.text in ("W", "FF"):
+                    match["played"] = False
+
         match["winner_url"] = urls[match["winner"]]
         match["loser_url"] = urls[match["loser"]]
         return match
@@ -227,8 +220,7 @@ class Tournament:
                     continue
                 span = td.find_all("span")[1]
                 name = span.a.text
-                href = span.a.attrs["href"]
-                href = None if "redlink" in href else href
+                href = valid_href(span.a)
                 self.participants.append((name, href, name in placers))
             player_row = next_tag(player_row)
 
@@ -251,7 +243,7 @@ class Tournament:
 
         else:
             self.first_place = links[-1].text.strip()
-            self.first_place_url = links[-1].attrs["href"]
+            self.first_place_url = valid_href(links[-1])
             self.load_second_third(prize_table)
         self.load_runners_up(prize_table)
 
@@ -421,9 +413,7 @@ class Tournament:
             if not first_place or first_place == "TBD":
                 return
             self.first_place = first_place
-            url = spans[-1].a.attrs["href"]
-            if "redlink" not in url:
-                self.first_place_url = url
+            self.first_place_url = valid_href(spans[-1].a)
         except (AttributeError, IndexError):
             pass
 
