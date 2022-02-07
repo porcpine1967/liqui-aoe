@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from datetime import date
 import pytest
-from liquiaoe.managers import TournamentManager, PlayerManager
+from liquiaoe.managers import Tournament, TournamentManager, PlayerManager
 from liquiaoe.loaders import VcrLoader
 
 
@@ -283,3 +283,10 @@ def test_brackets(tournament_manager):
     assert match["winner_url"] == "/ageofempires/Liereyy"
     assert match["loser_url"] == None
 
+def test_from_page():
+    loader = VcrLoader()
+    tournament = Tournament("/ageofempires/Wandering_Warriors_Cup")
+    tournament.load_advanced(loader)
+
+    assert tournament.start == date(2022, 1, 8)
+    assert tournament.end == date(2022, 2, 6)

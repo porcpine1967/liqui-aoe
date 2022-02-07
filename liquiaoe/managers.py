@@ -107,9 +107,10 @@ def next_tag(first_tag):
     return None
 
 class Tournament:
-    def __init__(self):
+    def __init__(self, url=""):
+        self.url = url
         # Basic attributes (loaded from tournaments page)
-        self.name = self.url = self.game = self.tier = self.prize = self.loader_prize = ""
+        self.name = self.game = self.tier = self.prize = self.loader_prize = ""
         self.start = self.end = self.first_place = self.first_place_url = self.second_place = None
         self.loader_place = None
         self.participant_count = -1
@@ -363,6 +364,10 @@ class Tournament:
                         self.team = True
                 if div.div.text == "Sponsor(s):":
                     self.sponsors = div_attributes(div)
+                if div.div.text == "Start Date:":
+                    self.start = date.fromisoformat(text_from_tag(div, "div"))
+                if div.div.text == "End Date:":
+                    self.end = date.fromisoformat(text_from_tag(div, "div"))
             except AttributeError:
                 pass
 
