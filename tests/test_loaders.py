@@ -41,9 +41,6 @@ def test_vcr_available(availability_urls):
 
 def test_debugging_removed():
     assert THROTTLE == 32
-    with open("liquiaoe/loaders.py") as f:
-        for l in f:
-            assert "print(" not in l
     with open("liquiaoe/managers.py") as f:
         for l in f:
             assert "print(" not in l

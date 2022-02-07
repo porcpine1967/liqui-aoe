@@ -32,8 +32,12 @@ class HttpsLoader:
     def available(self, tail):
         return True
 
+    def actually_calling(self, path):
+        print("CALLING {}".format(path))
+
     def soup(self, path):
         # Per liquipedia api terms of use, parse requires 30 second throttle
+        self.actually_calling(path)
         if self.last_call + self.throttle(path) > time.time():
             time.sleep(self.last_call + self.throttle(path) - time.time())
         url = self._base_url.format(tail(path))
@@ -66,6 +70,10 @@ class VcrLoader(HttpsLoader):
 
     def available(self, path):
         return os.path.exists(cassette(path))
+
+    def actually_calling(self, path):
+        if not self.available(path):
+            print("CALLING {}".format(path))
 
     def throttle(self, path):
         if self.available(path):
