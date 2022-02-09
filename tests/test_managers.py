@@ -149,8 +149,8 @@ def test_team_tournament(tournament_manager):
     assert tournament.first_place == "oSetinhas & OMurchu (oSetinhas, OMurchu)"
     assert tournament.second_place == "Andorin & TheRenano (Andorin, TheRenano)"
     assert len(tournament.runners_up) == 2
-    assert tournament.runners_up[0] == "Sommos & Lacrima"
-    assert tournament.runners_up[1] == "Target331 & Kloerb"
+    assert tournament.runners_up[0] == "Sommos & Lacrima (Sommos, Lacrima)"
+    assert tournament.runners_up[1] == "Target331 & Kloerb (Target331, Kloerb)"
 
 def test_other_team_tournament(tournament_manager):
     tournaments = tournament_manager.all()
@@ -175,6 +175,10 @@ def test_simple_tournament(tournament_manager):
     assert not tournament.team
     assert len(tournament.runners_up) == 1
     assert tournament.runners_up == ["Bl4ck - Redlash"]
+    assert tournament.placements["/ageofempires/Bl4ck"] == "3rd-4th"
+    assert tournament.placements["Redlash"] == "3rd-4th"
+    assert tournament.placements["/ageofempires/Monoz"] == "5th-8th"
+    assert tournament.placements["Marty"] == "9th-16th"
 
 
 def test_single_fourth_place(tournament_manager):
@@ -237,7 +241,7 @@ def test_index_out_of_range():
         assert tournament.name == name
         tournament.load_advanced(tournament_manager.loader)
 
-def test_participants(tournament_manager):
+def test_participants_wwc(tournament_manager):
     tournaments = tournament_manager.all()
     tournament = tournaments[25]
     assert tournament.name == "Wandering Warriors Cup"

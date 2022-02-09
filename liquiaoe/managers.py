@@ -126,6 +126,7 @@ class Tournament:
         self.team = False
         self.runners_up = []
         self.rounds = []
+        self.placements = defaultdict(str)
 
     def __str__(self):
         return self.name
@@ -154,12 +155,6 @@ class Tournament:
             self.description = ""
         self.load_info_box(node_from_class(main, "fo-nttax-infobox"))
         prize_table = node_from_class(main, "prizepooltable")
-        if not self.first_place or self.team:
-            self.load_all_places(prize_table)
-        else:
-            self.load_runners_up(prize_table)
-        if self.first_place and not self.second_place:
-            self.load_second_third(prize_table)
         self.load_participants(main, prize_table)
         try:
             self.load_bracket(node_from_class(main, "bracket"))
@@ -198,16 +193,17 @@ class Tournament:
         match["winner_url"] = urls[match["winner"]]
         match["loser_url"] = urls[match["loser"]]
         return match
+
     def load_participants(self, node, prize_table):
-        placers = prize_table.text
+        if not self.placements:
+            self.load_all_places(prize_table)
         if self.team:
             return
-        found = False
+        placers = self.placements.keys()
         for h2 in node.find_all("h2", recursive=True):
             if "Participants" in h2.text:
-                found = True
                 break
-        if not found:
+        else:
             return
         participant_node = next_tag(h2)
         try:
@@ -222,31 +218,10 @@ class Tournament:
                 span = td.find_all("span")[1]
                 name = span.a.text
                 href = valid_href(span.a)
-                self.participants.append((name, href, name in placers))
+                self.participants.append((name, href, name in placers or href in placers))
             player_row = next_tag(player_row)
 
-    def load_all_places(self, prize_table):
-        idx = self.name_column_index(prize_table)
-        first = node_from_class(prize_table, "background-color-first-place")
-        if "TBD" in first.text:
-            """ Don't bother if the results aren't in."""
-            return
-        first_columns = first.find_all("td")
-        links = first_columns[idx].find_all("a")
-        if self.team:
-            first_place = links[-1].text.strip()
-            self.first_place = self.team_name_from_node(first, idx)
-            try:
-                second = node_from_class(prize_table, "background-color-second-place")
-                self.second_place = self.team_name_from_node(second, idx)
-            except (IndexError, ParserError):
-                pass
 
-        else:
-            self.first_place = links[-1].text.strip()
-            self.first_place_url = valid_href(links[-1])
-            self.load_second_third(prize_table)
-        self.load_runners_up(prize_table)
 
     def team_name_from_node(self, node, column_index):
             columns = node.find_all("td")
@@ -284,52 +259,47 @@ class Tournament:
             member_row = member_row.next_sibling
         return team_dict
 
-    def load_second_third(self, prize_table):
+    def load_all_places(self, prize_table):
+        """ Loads all places."""
         idx = self.name_column_index(prize_table)
-        try:
-            second = node_from_class(prize_table, "background-color-second-place")
-        except ParserError:
-            return
-        if "TBD" in second.text:
-            """ Don't bother if the results aren't in."""
-            return
-        second_columns = second.find_all("td")
-        links = second_columns[idx].find_all("a")
-        self.second_place = links[-1].text.strip()
-        if "2nd-3rd" in second_columns[0].text:
-            third = next_tag(second)
-            third_columns = third.find_all("td")
-            links = third_columns[0].find_all("a")
-            self.second_place = "{} - {}".format(self.second_place, links[-1].text.strip())
-
-
-    def load_runners_up(self, prize_table):
-        """ Loads runners up."""
-        try:
-            # Might not have a third place (Wrang of Fire 3)
-            third = node_from_class(prize_table, "background-color-third-place")
-        except ParserError:
-            return
-        if "TBD" in third.text:
-            """ Don't bother if the results aren't in."""
-            return
-        idx = self.name_column_index(prize_table)
-        third_columns = third.find_all("td")
-        links = third_columns[idx].find_all("a")
-        self.runners_up.append(links[-1].text.strip())
-        fourth = next_tag(third)
-        if not fourth:
-            return
-        fourth_columns = fourth.find_all("td")
-        if "3rd-4th" in third_columns[0].text or len(fourth_columns) <= idx:
-            links = fourth_columns[0].find_all("a")
-            self.runners_up[0] = "{} - {}".format(self.runners_up[0], links[-1].text.strip())
-        else:
-            links = fourth_columns[idx].find_all("a")
-            try:
-                self.runners_up.append(links[-1].text.strip())
-            except IndexError:
-                pass
+        current_place = ""
+        places = defaultdict(list)
+        for row in prize_table.find_all("tr"):
+            tds = row.find_all("td")
+            if not tds:
+                continue
+            name_idx = 0
+            if "rowspan" in tds[0].attrs:
+                current_place = tds[0].text.strip()
+                name_idx = idx
+            links = tds[name_idx].find_all("a")
+            if not links:
+                continue
+            link = valid_href(links[-1])
+            name = links[-1].text.strip()
+            if self.team:
+                name = self.team_name_from_node(row, name_idx)
+            if 'TBD' in name:
+                continue
+            if link:
+                self.placements[link] = current_place
+            else:
+                self.placements[name] = current_place
+            if current_place.startswith('1st'):
+                places[1] = [name, link,]
+            elif current_place.startswith('2nd'):
+                places[2].append(name)
+            elif current_place.startswith('3rd'):
+                places[3].append(name)
+            elif current_place == '4th':
+                places[4].append(name)
+        if places[1]:
+            self.first_place, self.first_place_url = places[1]
+        if places[2]:
+            self.second_place = " - ".join(places[2])
+        for place in (3,4,):
+            if places[place]:
+                self.runners_up.append(" - ".join(places[place]))
 
     def name_column_index(self, node):
         """ Looks at the headers to find the approiate index for the name"""
