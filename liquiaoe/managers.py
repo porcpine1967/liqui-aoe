@@ -199,7 +199,6 @@ class Tournament:
             self.load_all_places(prize_table)
         if self.team:
             return
-        placers = self.placements.keys()
         for h2 in node.find_all("h2", recursive=True):
             if "Participants" in h2.text:
                 break
@@ -218,7 +217,8 @@ class Tournament:
                 span = td.find_all("span")[1]
                 name = span.a.text
                 href = valid_href(span.a)
-                self.participants.append((name, href, name in placers or href in placers))
+                place = self.placements[href] or self.placements[name] or False
+                self.participants.append((name, href, place))
             player_row = next_tag(player_row)
 
 

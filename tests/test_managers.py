@@ -248,9 +248,9 @@ def test_participants_wwc(tournament_manager):
     tournament.load_advanced(tournament_manager.loader)
 
     assert len(tournament.participants) == 64
-    assert tournament.participants[0] == ("ACCM", "/ageofempires/ACCM", True)
+    assert tournament.participants[0] == ("ACCM", "/ageofempires/ACCM", '9th-16th')
     assert tournament.participants[5] == ("Capoch", "/ageofempires/Capoch", False)
-    assert tournament.participants[-1] == ("_Tomate", None, True)
+    assert tournament.participants[-1] == ("_Tomate", None, '33rd-64th')
 
 def test_participants_placed(tournament_manager):
     tournaments = tournament_manager.all()
@@ -260,8 +260,8 @@ def test_participants_placed(tournament_manager):
     
     tournament.load_advanced(tournament_manager.loader)
     assert tournament.participants[0] == ("ACCM", "/ageofempires/ACCM", False)
-    assert tournament.participants[7] == ("Enzberg", None, True)
-    assert tournament.participants[15] == ("Modri", "/ageofempires/Modri", True)
+    assert tournament.participants[7] == ("Enzberg", None, '2nd-3rd')
+    assert tournament.participants[15] == ("Modri", "/ageofempires/Modri", '4th-9th')
 
 def test_brackets(tournament_manager):
     tournaments = tournament_manager.all()
