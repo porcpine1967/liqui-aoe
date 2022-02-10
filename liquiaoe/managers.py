@@ -141,7 +141,7 @@ class Tournament:
         self.game = tds[4].span.a.attrs["title"]
         self.name = tds[5].text
         self.url = tds[6].a.attrs["href"]
-        self.loader_prize = tds[10].text
+        self.loader_prize = tds[10].text.strip()
 
     def load_advanced(self, loader):
         """ Call the loader for self.url and parse."""

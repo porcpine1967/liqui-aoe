@@ -76,6 +76,7 @@ def test_load_from_player_main_page(player_manager):
     tournament = tournaments[-1]
     assert tournament.name == "The Medieval Wars 2013"
     assert tournament.loader_place == "17\xa0-\xa032nd"
+    assert tournament.loader_prize == ""
 
 def test_completed(tournament_manager):
     """ Tests tournament filter."""
