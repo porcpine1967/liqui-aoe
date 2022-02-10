@@ -175,10 +175,10 @@ def test_simple_tournament(tournament_manager):
     assert not tournament.team
     assert len(tournament.runners_up) == 1
     assert tournament.runners_up == ["Bl4ck - Redlash"]
-    assert tournament.placements["/ageofempires/Bl4ck"] == "3rd-4th"
-    assert tournament.placements["Redlash"] == "3rd-4th"
-    assert tournament.placements["/ageofempires/Monoz"] == "5th-8th"
-    assert tournament.placements["Marty"] == "9th-16th"
+    assert tournament.placements["/ageofempires/Bl4ck"][0] == "3rd-4th"
+    assert tournament.placements["Redlash"][0] == "3rd-4th"
+    assert tournament.placements["/ageofempires/Monoz"][0] == "5th-8th"
+    assert tournament.placements["Marty"][0] == "9th-16th"
 
 
 def test_single_fourth_place(tournament_manager):
@@ -248,9 +248,9 @@ def test_participants_wwc(tournament_manager):
     tournament.load_advanced(tournament_manager.loader)
 
     assert len(tournament.participants) == 64
-    assert tournament.participants[0] == ("ACCM", "/ageofempires/ACCM", '9th-16th')
-    assert tournament.participants[5] == ("Capoch", "/ageofempires/Capoch", False)
-    assert tournament.participants[-1] == ("_Tomate", None, '33rd-64th')
+    assert tournament.participants[0] == ("ACCM", "/ageofempires/ACCM", '9th-16th', '$500',)
+    assert tournament.participants[5] == ("Capoch", "/ageofempires/Capoch", False, '',)
+    assert tournament.participants[-1] == ("_Tomate", None, '33rd-64th', '',)
 
 def test_participants_placed(tournament_manager):
     tournaments = tournament_manager.all()
@@ -259,9 +259,9 @@ def test_participants_placed(tournament_manager):
     assert tournament.name == "Wrang of Fire 3"
     
     tournament.load_advanced(tournament_manager.loader)
-    assert tournament.participants[0] == ("ACCM", "/ageofempires/ACCM", False)
-    assert tournament.participants[7] == ("Enzberg", None, '2nd-3rd')
-    assert tournament.participants[15] == ("Modri", "/ageofempires/Modri", '4th-9th')
+    assert tournament.participants[0] == ("ACCM", "/ageofempires/ACCM", False, '')
+    assert tournament.participants[7] == ("Enzberg", None, '2nd-3rd', '$750',)
+    assert tournament.participants[15] == ("Modri", "/ageofempires/Modri", '4th-9th', '$200',)
 
 def test_brackets(tournament_manager):
     tournaments = tournament_manager.all()

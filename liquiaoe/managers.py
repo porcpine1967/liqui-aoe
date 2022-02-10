@@ -217,8 +217,8 @@ class Tournament:
                 span = td.find_all("span")[1]
                 name = span.a.text
                 href = valid_href(span.a)
-                place = self.placements[href] or self.placements[name] or False
-                self.participants.append((name, href, place))
+                data = self.placements[href] or self.placements[name] or (False, '',)
+                self.participants.append((name, href, *data))
             player_row = next_tag(player_row)
 
 
@@ -263,6 +263,7 @@ class Tournament:
         """ Loads all places."""
         idx = self.name_column_index(prize_table)
         current_place = ""
+        current_prize = ""
         places = defaultdict(list)
         for row in prize_table.find_all("tr"):
             tds = row.find_all("td")
@@ -271,6 +272,8 @@ class Tournament:
             name_idx = 0
             if "rowspan" in tds[0].attrs:
                 current_place = tds[0].text.strip()
+                current_prize = tds[1].text.strip()
+                current_prize = '' if current_prize == '-' else current_prize
                 name_idx = idx
             links = tds[name_idx].find_all("a")
             if not links:
@@ -282,9 +285,9 @@ class Tournament:
             if 'TBD' in name:
                 continue
             if link:
-                self.placements[link] = current_place
+                self.placements[link] = (current_place, current_prize,)
             else:
-                self.placements[name] = current_place
+                self.placements[name] = (current_place, current_prize,)
             if current_place.startswith('1st'):
                 places[1] = [name, link,]
             elif current_place.startswith('2nd'):
