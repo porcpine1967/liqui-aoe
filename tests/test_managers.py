@@ -176,9 +176,9 @@ def test_simple_tournament(tournament_manager):
     assert not tournament.team
     assert len(tournament.runners_up) == 1
     assert tournament.runners_up == ["Bl4ck - Redlash"]
-    assert tournament.placements["/ageofempires/Bl4ck"][0] == "3rd-4th"
+    assert tournament.placements["Bl4ck"][0] == "3rd-4th"
     assert tournament.placements["Redlash"][0] == "3rd-4th"
-    assert tournament.placements["/ageofempires/Monoz"][0] == "5th-8th"
+    assert tournament.placements["Monoz"][0] == "5th-8th"
     assert tournament.placements["Marty"][0] == "9th-16th"
 
 
@@ -251,7 +251,13 @@ def test_participants_wwc(tournament_manager):
     assert len(tournament.participants) == 64
     assert tournament.participants[0] == ("ACCM", "/ageofempires/ACCM", '9th-16th', '$500',)
     assert tournament.participants[5] == ("Capoch", "/ageofempires/Capoch", False, '',)
-    assert tournament.participants[-1] == ("_Tomate", None, '33rd-64th', '',)
+    assert tournament.participants[-1] == ("Tomate", None, '33rd-64th', '',)
+    for name, url, _, _ in tournament.participants:
+        try:
+            url_name = url.split('/')[-1]
+            assert url_name == name
+        except AttributeError:
+            pass
 
 def test_participants_placed(tournament_manager):
     tournaments = tournament_manager.all()
@@ -284,7 +290,7 @@ def test_brackets(tournament_manager):
     match = tournament.rounds[0][6]
     assert not match["played"]
     assert match["winner"] == "Liereyy"
-    assert match["loser"] == "_Tomate"
+    assert match["loser"] == "Tomate"
     assert match["winner_url"] == "/ageofempires/Liereyy"
     assert match["loser_url"] == None
 

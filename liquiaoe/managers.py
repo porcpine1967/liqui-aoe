@@ -75,6 +75,17 @@ def class_in_node(css_class, node):
     except (AttributeError, KeyError):
         return False
 
+def liquipedia_key(anchor_tag):
+    """ returns key name for player used in path or as title for missing page"""
+    href = anchor_tag.attrs["href"]
+    if "redlink" in href:
+        _, attrs = href.split('?')
+        for attr_pair in attrs.split('&'):
+            if attr_pair.startswith('title='):
+                return attr_pair[6:]
+    else:
+        return href.split('/')[-1]
+
 def valid_href(anchor_tag):
     href = anchor_tag.attrs["href"]
     return None if "redlink" in href else href
@@ -176,22 +187,31 @@ class Tournament:
     def load_match(self, node):
         match = {"played": True, "winner": None, "loser": None,
                  "winner_url": None, "loser_url": None,}
-        urls = defaultdict(lambda: None)
+        players = {}
+        urls = {}
+        winner = ''
+        loser = ''
         for div in node.find_all("div"):
             if class_in_node("bracket-cell-r1", div):
-                key = "winner" if "font-weight:bold" == div.attrs["style"] else "loser"
+                name = ''
                 for string in div.stripped_strings:
-                    match[key] = string
+                    name = string
                     break
+                if "font-weight:bold" == div.attrs["style"]:
+                    winner = name
+                else:
+                    loser = name
             if class_in_node("bracket-popup-header-vs-child", div):
                 for a in div.find_all("a"):
+                    players[a.text] = liquipedia_key(a)
                     urls[a.text] = valid_href(a)
             if class_in_node("bracket-score", div):
                 if div.text in ("W", "FF"):
                     match["played"] = False
-
-        match["winner_url"] = urls[match["winner"]]
-        match["loser_url"] = urls[match["loser"]]
+        match["winner"] = players.get(winner)
+        match["loser"] = players.get(loser)
+        match["winner_url"] = urls.get(winner)
+        match["loser_url"] = urls.get(loser)
         return match
 
     def load_participants(self, node, prize_table):
@@ -215,9 +235,9 @@ class Tournament:
                 if not td.text:
                     continue
                 span = td.find_all("span")[1]
-                name = span.a.text
+                name = liquipedia_key(span.a)
                 href = valid_href(span.a)
-                data = self.placements[href] or self.placements[name] or (False, '',)
+                data = self.placements[name] or (False, '',)
                 self.participants.append((name, href, *data))
             player_row = next_tag(player_row)
 
@@ -278,18 +298,14 @@ class Tournament:
             links = tds[name_idx].find_all("a")
             if not links:
                 continue
-            link = valid_href(links[-1])
             name = links[-1].text.strip()
             if self.team:
                 name = self.team_name_from_node(row, name_idx)
             if 'TBD' in name:
                 continue
-            if link:
-                self.placements[link] = (current_place, current_prize,)
-            else:
-                self.placements[name] = (current_place, current_prize,)
+            self.placements[liquipedia_key(links[-1])] = (current_place, current_prize,)
             if current_place.startswith('1st'):
-                places[1] = [name, link,]
+                places[1] = [name, valid_href(links[-1]),]
             elif current_place.startswith('2nd'):
                 places[2].append(name)
             elif current_place.startswith('3rd'):
