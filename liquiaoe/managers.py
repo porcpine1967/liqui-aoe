@@ -232,7 +232,7 @@ class Tournament:
             return
         while player_row:
             for td in player_row.find_all("td"):
-                if not td.text:
+                if not td.text or not td.span:
                     continue
                 span = td.find_all("span")[1]
                 name = liquipedia_key(span.a)

@@ -301,3 +301,6 @@ def test_from_page():
 
     assert tournament.start == date(2022, 1, 8)
     assert tournament.end == date(2022, 2, 6)
+
+    tournament = Tournament("/ageofempires/Aorus_League/3")
+    tournament.load_advanced(loader)
