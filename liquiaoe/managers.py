@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """ Everything you want to know about Age of Empires Tournaments."""
 from collections import defaultdict
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 import re
 
 import bs4
@@ -74,6 +74,15 @@ def class_in_node(css_class, node):
         return css_class in node.attrs["class"]
     except (AttributeError, KeyError):
         return False
+
+def class_starts_with(css_class, node):
+    try:
+        for attr in node.attrs["class"]:
+            if attr.startswith(css_class):
+                return True
+    except (AttributeError, KeyError):
+        pass
+    return False
 
 def liquipedia_key(anchor_tag):
     """ returns key name for player used in path or as title for missing page"""
@@ -168,7 +177,12 @@ class Tournament:
         prize_table = node_from_class(main, "prizepooltable")
         self.load_participants(main, prize_table)
         try:
-            self.load_bracket(node_from_class(main, "bracket"))
+            brackets = []
+            for div in main.find_all('div'):
+                if class_in_node('bracket', div):
+                    brackets.append(div)
+            if brackets:
+                self.load_bracket(brackets[-1])
         except ParserError:
             pass
 
@@ -176,6 +190,11 @@ class Tournament:
         for bracket_round in node.find_all("div"):
             if class_in_node("bracket-column-matches", bracket_round):
                 self.load_round(bracket_round)
+        try:
+            if len(self.rounds[-1]) == len(self.rounds[-2]):
+                self.rounds[-1].pop()
+        except IndexError:
+            pass
 
     def load_round(self, node):
         matches = []
@@ -192,19 +211,20 @@ class Tournament:
         winner = ''
         loser = ''
         for div in node.find_all("div"):
-            if class_in_node("bracket-cell-r1", div):
+            if class_starts_with("bracket-cell-r", div):
                 name = ''
                 for string in div.stripped_strings:
                     name = string
                     break
-                if "font-weight:bold" == div.attrs["style"]:
+                if "font-weight:bold" == div.attrs.get("style"):
                     winner = name
                 else:
                     loser = name
             if class_in_node("bracket-popup-header-vs-child", div):
                 for a in div.find_all("a"):
-                    players[a.text] = liquipedia_key(a)
-                    urls[a.text] = valid_href(a)
+                    if a.text:
+                        players[a.text] = liquipedia_key(a)
+                        urls[a.text] = valid_href(a)
             if class_in_node("bracket-score", div):
                 if div.text in ("W", "FF"):
                     match["played"] = False
@@ -447,5 +467,63 @@ class PlayerManager:
                 player_tournaments.append(tournament)
         return player_tournaments
 
+class TransferManager:
+    PORTAL = '/ageofempires/Portal:Transfers'
+    def __init__(self, loader):
+        self.loader = loader
+        self._transfers = []
+
+    @property
+    def transfers(self):
+        if not self._transfers:
+            data = self.loader.soup(self.PORTAL)
+            for node in data.find_all('div'):
+                if class_in_node('divRow', node):
+                    self._transfers.append(Transfer(node))
+        return self._transfers
+
+    def recent_transfers(self, now=None):
+        """ Transfers in the past week.
+        'now' for testing."""
+        recent = []
+        now = now or datetime.now().date()
+        cutoff = now - timedelta(days=8)
+        for transfer in self.transfers:
+            if cutoff < transfer.date <= now:
+                recent.append(transfer)
+        return recent
+
+class Transfer:
+    def __init__(self, row):
+        self.date = self.old = self.new = self.ref = None
+        self.players = []
+        self.load(row)
+        
+    def load(self, row):
+        for div in row.find_all('div'):
+            if class_in_node('Date', div):
+                self.date = date.fromisoformat(div.text)
+            if class_in_node('Name', div):
+                for a in div.find_all('a'):
+                    if a.text:
+                        player = (a.text, valid_href(a),)
+                        self.players.append(player)
+            if class_in_node('OldTeam', div):
+                for a in div.find_all('a'):
+                    if 'title' in a.attrs:
+                        self.old = a.attrs['title']
+                        break
+            if class_in_node('NewTeam', div):
+                for a in div.find_all('a'):
+                    if 'title' in a.attrs:
+                        self.new = a.attrs['title']
+                        break
+            if class_in_node('Ref', div):
+                try:
+                    self.ref = div.a.attrs['href']
+                except AttributeError:
+                    pass
+                    
+                                
 class ParserError(Exception):
     """ What to throw if something critical missing from soup."""

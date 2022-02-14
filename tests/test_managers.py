@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from datetime import date
 import pytest
-from liquiaoe.managers import Tournament, TournamentManager, PlayerManager
+from liquiaoe.managers import Tournament, TournamentManager, PlayerManager, TransferManager
 from liquiaoe.loaders import VcrLoader
 
 
@@ -238,6 +238,7 @@ def test_index_out_of_range():
         (126, "EscapeTV Launch Event"),
     )
     for idx, name in tests:
+        print(name)
         tournament = tournaments[idx]
         assert tournament.name == name
         tournament.load_advanced(tournament_manager.loader)
@@ -247,10 +248,10 @@ def test_participants_wwc(tournament_manager):
     tournament = tournaments[25]
     assert tournament.name == "Wandering Warriors Cup"
     tournament.load_advanced(tournament_manager.loader)
-
+    assert tournament.first_place
     assert len(tournament.participants) == 64
     assert tournament.participants[0] == ("ACCM", "/ageofempires/ACCM", '9th-16th', '$500',)
-    assert tournament.participants[5] == ("Capoch", "/ageofempires/Capoch", False, '',)
+    assert tournament.participants[5] == ("Capoch", "/ageofempires/Capoch", '5th-8th', '$812.50',)
     assert tournament.participants[-1] == ("Tomate", None, '33rd-64th', '',)
     for name, url, _, _ in tournament.participants:
         try:
@@ -294,6 +295,18 @@ def test_brackets(tournament_manager):
     assert match["winner_url"] == "/ageofempires/Liereyy"
     assert match["loser_url"] == None
 
+    match = tournament.rounds[1][0]
+    assert match["played"]
+    assert match["winner"] == "Villese"
+    assert match["loser"] == "Overtaken"
+    assert match["winner_url"] == "/ageofempires/Villese"
+    assert match["loser_url"] == "/ageofempires/Overtaken"
+
+    start = 32
+    for round_ in tournament.rounds:
+        assert len(round_) == start
+        start = start / 2
+        
 def test_from_page():
     loader = VcrLoader()
     tournament = Tournament("/ageofempires/Wandering_Warriors_Cup")
@@ -304,3 +317,67 @@ def test_from_page():
 
     tournament = Tournament("/ageofempires/Aorus_League/3")
     tournament.load_advanced(loader)
+
+def test_second_third_bracket():
+    loader = VcrLoader()
+    tournament = Tournament('/ageofempires/History_Hit_Open')
+    tournament.load_advanced(loader)
+    start = 32
+    for round_ in tournament.rounds:
+        assert len(round_) == start
+        start = start / 2
+def test_kotd_brackets():
+    loader = VcrLoader()
+    tournament = Tournament('/ageofempires/King_of_the_Desert/4')
+    tournament.load_advanced(loader)
+    assert len(tournament.rounds) == 3
+
+def test_transfers():
+    loader = VcrLoader()
+    manager = TransferManager(loader)
+    assert len(manager.transfers) == 30
+    transfer = manager.transfers[0]
+    assert transfer.date == date(2022, 1, 31)
+    assert len(transfer.players) == 1
+    assert transfer.players[0] == ('Deimos', None,)
+    assert transfer.old == None
+    assert transfer.new == 'Genesis Gaming'
+    assert transfer.ref == 'https://twitter.com/xGenesisGamingx/status/1488098840146333698'
+    transfer = manager.transfers[0]
+    assert transfer.date == date(2022, 1, 31)
+    player = transfer.players[0]
+    assert player == ('Deimos', None,)
+    assert transfer.old == None
+    assert transfer.new == 'Genesis Gaming'
+    assert transfer.ref == 'https://twitter.com/xGenesisGamingx/status/1488098840146333698'
+    # multiple players
+    transfer = manager.transfers[9]
+    assert len(transfer.players) == 5
+    player = transfer.players[0]
+    assert player == ('Bee', '/ageofempires/Bee',)
+    assert transfer.ref == 'https://twitter.com/3Dclanru/status/1475845997037297669'
+    # transfer to-from
+    transfer = manager.transfers[11]
+    assert len(transfer.players) == 1
+    assert transfer.players[0][0] == 'Snapy'
+    assert transfer.old == 'RoxStyle'
+    assert transfer.new == 'ORUX'
+    assert transfer.ref == None
+    # transfer from
+    transfer = manager.transfers[2]
+    assert len(transfer.players) == 1
+    assert transfer.players[0][0] == 'The_Dragonstar'
+    assert transfer.old == 'Dark Empire'
+    assert transfer.new == None
+    
+def test_recent_transfers():
+    loader = VcrLoader()
+    manager = TransferManager(loader)
+    assert len(manager.recent_transfers()) == 0
+    transfers = manager.recent_transfers(date(2022, 1, 13))
+    assert len(transfers) == 3
+    expected = ('HG Canopy', 'The_Dragonstar', 'Kasva',)
+    for idx, transfer in enumerate(transfers):
+        assert len(transfer.players) == 1
+        assert transfer.players[0][0] == expected[idx]
+    
