@@ -265,7 +265,7 @@ def test_participants_placed(tournament_manager):
 
     tournament = tournaments[33]
     assert tournament.name == "Wrang of Fire 3"
-    
+
     tournament.load_advanced(tournament_manager.loader)
     assert tournament.participants[0] == ("ACCM", "/ageofempires/ACCM", False, '')
     assert tournament.participants[7] == ("Enzberg", None, '2nd-3rd', '$750',)
@@ -306,7 +306,7 @@ def test_brackets(tournament_manager):
     for round_ in tournament.rounds:
         assert len(round_) == start
         start = start / 2
-        
+
 def test_from_page():
     loader = VcrLoader()
     tournament = Tournament("/ageofempires/Wandering_Warriors_Cup")
@@ -369,7 +369,7 @@ def test_transfers():
     assert transfer.players[0][0] == 'The_Dragonstar'
     assert transfer.old == 'Dark Empire'
     assert transfer.new == None
-    
+
 def test_recent_transfers():
     loader = VcrLoader()
     manager = TransferManager(loader)
@@ -380,4 +380,4 @@ def test_recent_transfers():
     for idx, transfer in enumerate(transfers):
         assert len(transfer.players) == 1
         assert transfer.players[0][0] == expected[idx]
-    
+

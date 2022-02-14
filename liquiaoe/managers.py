@@ -202,7 +202,7 @@ class Tournament:
             if class_in_node("bracket-game", match):
                 matches.append(self.load_match(match))
         self.rounds.append(matches)
-        
+
     def load_match(self, node):
         match = {"played": True, "winner": None, "loser": None,
                  "winner_url": None, "loser_url": None,}
@@ -498,7 +498,7 @@ class Transfer:
         self.date = self.old = self.new = self.ref = None
         self.players = []
         self.load(row)
-        
+
     def load(self, row):
         for div in row.find_all('div'):
             if class_in_node('Date', div):
@@ -523,7 +523,6 @@ class Transfer:
                     self.ref = div.a.attrs['href']
                 except AttributeError:
                     pass
-                    
-                                
+
 class ParserError(Exception):
     """ What to throw if something critical missing from soup."""

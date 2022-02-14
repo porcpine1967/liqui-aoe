@@ -54,7 +54,7 @@ class HttpsLoader:
                         raise RequestsException(response.text, 404)
                 except KeyError:
                     pass
-                raise RequestsException(response.text, response.status_code)    
+                raise RequestsException(response.text, response.status_code)
         else:
             raise RequestsException(response.text, response.status_code)
 
