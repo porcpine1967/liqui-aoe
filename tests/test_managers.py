@@ -109,7 +109,6 @@ def test_tournaments(tournament_manager):
     """Make sure tournament manager loads tournaments correctly."""
     assert len(tournament_manager.all()) == 60
     tournaments = tournament_manager.all()
-    print_info(tournaments)
     tournament = tournaments[3]
     assert tournament.tier == "B-Tier"
     assert tournament.game == "Age of Empires II"
@@ -158,7 +157,6 @@ def test_other_team_tournament(tournament_manager):
     tournament = tournaments[40]
     assert tournament.name == "AoE4 Pro League"
     tournament.load_advanced(tournament_manager.loader)
-    print(tournament.first_place)
 
 def test_simple_tournament(tournament_manager):
     tournaments = tournament_manager.all()
@@ -238,7 +236,6 @@ def test_index_out_of_range():
         (126, "EscapeTV Launch Event"),
     )
     for idx, name in tests:
-        print(name)
         tournament = tournaments[idx]
         assert tournament.name == name
         tournament.load_advanced(tournament_manager.loader)
@@ -381,3 +378,9 @@ def test_recent_transfers():
         assert len(transfer.players) == 1
         assert transfer.players[0][0] == expected[idx]
 
+def test_wtv(tournament_manager):
+    tournaments = tournament_manager.all()
+    tournament = tournaments[27]
+    assert tournament.name == 'New Year – Cup'
+    tournament.load_advanced(tournament_manager.loader)
+    assert len(tournament.participants) == 32

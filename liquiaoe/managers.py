@@ -244,7 +244,9 @@ class Tournament:
                 break
         else:
             return
-        participant_node = next_tag(h2)
+        participant_node = h2
+        while participant_node.name != 'div':
+            participant_node = next_tag(participant_node)
         try:
             player_row = node_from_class(participant_node, "player-row")
         except ParserError:
