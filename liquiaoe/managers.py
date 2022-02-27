@@ -174,9 +174,9 @@ class Tournament:
         except AttributeError:
             self.description = ""
         self.load_info_box(node_from_class(main, "fo-nttax-infobox"))
-        prize_table = node_from_class(main, "prizepooltable")
-        self.load_participants(main, prize_table)
         try:
+            prize_table = node_from_class(main, "prizepooltable")
+            self.load_participants(main, prize_table)
             brackets = []
             for div in main.find_all('div'):
                 if class_in_node('bracket', div):
@@ -317,14 +317,14 @@ class Tournament:
                 current_prize = tds[1].text.strip()
                 current_prize = '' if current_prize == '-' else current_prize
                 name_idx = idx
+            if 'TBD' in tds[name_idx].text:
+                continue
             links = tds[name_idx].find_all("a")
             if not links:
                 continue
             name = links[-1].text.strip()
             if self.team:
                 name = self.team_name_from_node(row, name_idx)
-            if 'TBD' in name:
-                continue
             self.placements[liquipedia_key(links[-1])] = (current_place, current_prize,)
             if current_place.startswith('1st'):
                 places[1] = [name, valid_href(links[-1]),]

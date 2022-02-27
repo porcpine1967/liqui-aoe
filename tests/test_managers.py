@@ -384,3 +384,15 @@ def test_wtv(tournament_manager):
     assert tournament.name == 'New Year – Cup'
     tournament.load_advanced(tournament_manager.loader)
     assert len(tournament.participants) == 32
+
+def test_missing_prizepool_table(tournament_manager):
+    tournament = Tournament("/ageofempires/Regicide_Rumble/4")
+    tournament.load_advanced(tournament_manager.loader)
+
+def test_no_category_url(tournament_manager):
+    tournaments = tournament_manager.all()
+    tournament = tournaments[29]
+    assert tournament.url == "/ageofempires/HunLeague:_Gold"
+    assert not tournament.first_place_url
+    tournament.load_advanced(tournament_manager.loader)
+    assert not tournament.first_place_url    
