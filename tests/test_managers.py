@@ -395,4 +395,15 @@ def test_no_category_url(tournament_manager):
     assert tournament.url == "/ageofempires/HunLeague:_Gold"
     assert not tournament.first_place_url
     tournament.load_advanced(tournament_manager.loader)
-    assert not tournament.first_place_url    
+    assert not tournament.first_place_url
+
+def test_no_start(tournament_manager):
+    tournament = Tournament('/ageofempires/Rusaoc_Cup/77')
+    tournament.load_advanced(tournament_manager.loader)
+    assert tournament.start
+
+def test_participant_link(tournament_manager):
+    tournament = Tournament('/ageofempires/Only_Land_French_Cup')
+    tournament.load_advanced(tournament_manager.loader)
+    assert tournament.start
+    

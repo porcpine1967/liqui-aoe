@@ -254,7 +254,7 @@ class Tournament:
             return
         while player_row:
             for td in player_row.find_all("td"):
-                if not td.text or not td.span:
+                if not td.text or not td.span or 'TBD' in td.text:
                     continue
                 span = td.find_all("span")[1]
                 name = liquipedia_key(span.a)
@@ -378,6 +378,9 @@ class Tournament:
                 if div.div.text == "Start Date:":
                     self.start = date.fromisoformat(text_from_tag(div, "div"))
                 if div.div.text == "End Date:":
+                    self.end = date.fromisoformat(text_from_tag(div, "div"))
+                if div.div.text == "Date:":
+                    self.start = date.fromisoformat(text_from_tag(div, "div"))
                     self.end = date.fromisoformat(text_from_tag(div, "div"))
             except AttributeError:
                 pass
