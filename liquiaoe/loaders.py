@@ -42,7 +42,7 @@ class HttpsLoader:
             time.sleep(self.last_call + self.throttle(path) - time.time())
         url = self._base_url.format(tail(path))
         response = self.fetch_response(url, path)
-        self.last_call = time.time()
+        self.update_last_call(path)
         if response.status_code == 200:
             info = response.json()
             try:
@@ -61,8 +61,15 @@ class HttpsLoader:
     def fetch_response(self, url, _):
         return requests.get(url, headers=self._headers)
 
+    def update_last_call(self, _):
+        self.last_call = time.time()
+
 class VcrLoader(HttpsLoader):
     """Object for fetching test data from cassettes."""
+
+    def update_last_call(self, path):
+        if not self.available(path):
+            self.last_call = time.time()
 
     def fetch_response(self, url, path):
         with vcr.use_cassette(cassette(path)):

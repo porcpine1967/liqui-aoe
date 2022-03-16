@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 from datetime import date
 import pytest
-from liquiaoe.managers import Tournament, TournamentManager, PlayerManager, TransferManager
+from liquiaoe.managers import Tournament, TournamentManager, PlayerManager, TransferManager, MatchResultsManager
 from liquiaoe.loaders import VcrLoader
 
+
+@pytest.fixture
+def loader():
+    return VcrLoader()
 
 @pytest.fixture
 def tournament_manager():
@@ -110,6 +114,7 @@ def test_tournaments(tournament_manager):
     assert len(tournament_manager.all()) == 60
     tournaments = tournament_manager.all()
     tournament = tournaments[3]
+
     assert tournament.tier == "B-Tier"
     assert tournament.game == "Age of Empires II"
     assert tournament.name == "Ayre Masters Series II: Arabia"
@@ -118,6 +123,7 @@ def test_tournaments(tournament_manager):
     assert tournament.end == date(2022, 5, 1)
     assert tournament.prize == "$500"
     assert tournament.participant_count == 8
+    assert not tournament.team
     assert not tournament.cancelled
     assert tournament.first_place == None
     assert tournament.second_place == None
@@ -130,15 +136,16 @@ def test_tournaments(tournament_manager):
     assert tournaments[56].first_place == "Garnath"
     assert tournaments[56].first_place_url == "/ageofempires/Garnath"
     assert tournaments[56].second_place == "hhh_"
+    assert not tournaments[56].team
 
     assert tournaments[58].first_place == "speed + dark"
     assert tournaments[58].first_place_url == None
-
 
 def test_team_tournament(tournament_manager):
     tournaments = tournament_manager.all()
     tournament = tournaments[1]
     assert tournament.name == "Samedo's Civilization Cup 2021"
+    assert tournament.team
     tournament.load_advanced(tournament_manager.loader)
     assert tournament.description == "Samedo's Civilization Cup 2021 is an Age of Empires II 2v2 tournament organized by Samedo-sama."
     assert len(tournament.organizers) == 1
@@ -151,12 +158,23 @@ def test_team_tournament(tournament_manager):
     assert len(tournament.runners_up) == 2
     assert tournament.runners_up[0] == "Sommos & Lacrima (Sommos, Lacrima)"
     assert tournament.runners_up[1] == "Target331 & Kloerb (Target331, Kloerb)"
+    assert len(tournament.teams) == 12
+    for team in tournament.teams.values():
+        assert len(team['members']) == 2
 
 def test_other_team_tournament(tournament_manager):
     tournaments = tournament_manager.all()
     tournament = tournaments[40]
     assert tournament.name == "AoE4 Pro League"
     tournament.load_advanced(tournament_manager.loader)
+    assert tournament.team
+    assert tournament.rounds[0][0]['winner'] == 'Beasty_and_the_STRAELBORAAAAAS'
+    assert tournament.rounds[1][0]['winner'] == 'Beasty_and_the_STRAELBORAAAAAS'
+    assert tournament.rounds[2][0]['loser'] == 'Beasty_and_the_STRAELBORAAAAAS'
+    assert tournament.rounds[0][1]['winner'] == 'White_Wolf_Palace'
+    assert tournament.rounds[0][1]['winner_url'] == '/ageofempires/White_Wolf_Palace'
+    assert tournament.rounds[0][3]['loser'] == 'Vietnam_Legends'
+    assert tournament.rounds[0][3]['loser_url'] == '/ageofempires/Vietnam_Legends'
 
 def test_simple_tournament(tournament_manager):
     tournaments = tournament_manager.all()
@@ -220,15 +238,15 @@ def test_second_third_place(tournament_manager):
     tournament.load_advanced(tournament_manager.loader)
     assert tournament.second_place == "Enzberg - Joey the Bonqueror"
 
-def test_load_alternate_portal():
-    tournament_manager = TournamentManager(VcrLoader(), "/ageofempires/Age_of_Empires_IV/Tournaments")
+def test_load_alternate_portal(loader):
+    tournament_manager = TournamentManager(loader, "/ageofempires/Age_of_Empires_IV/Tournaments")
     tournaments = tournament_manager.all()
     assert len(tournaments) == 91
     assert tournaments[44].name == "Secret Invitational"
     assert tournaments[44].cancelled
 
-def test_index_out_of_range():
-    tournament_manager = TournamentManager(VcrLoader(), "/ageofempires/Age_of_Empires_II/Tournaments/Pre_2020")
+def test_index_out_of_range(loader):
+    tournament_manager = TournamentManager(loader, "/ageofempires/Age_of_Empires_II/Tournaments/Pre_2020")
     tournaments = tournament_manager.all()
     tests = (
         (94, "Rusaoc Cup 30"),
@@ -304,8 +322,7 @@ def test_brackets(tournament_manager):
         assert len(round_) == start
         start = start / 2
 
-def test_from_page():
-    loader = VcrLoader()
+def test_from_page(loader):
     tournament = Tournament("/ageofempires/Wandering_Warriors_Cup")
     tournament.load_advanced(loader)
 
@@ -315,22 +332,19 @@ def test_from_page():
     tournament = Tournament("/ageofempires/Aorus_League/3")
     tournament.load_advanced(loader)
 
-def test_second_third_bracket():
-    loader = VcrLoader()
+def test_second_third_bracket(loader):
     tournament = Tournament('/ageofempires/History_Hit_Open')
     tournament.load_advanced(loader)
     start = 32
     for round_ in tournament.rounds:
         assert len(round_) == start
         start = start / 2
-def test_kotd_brackets():
-    loader = VcrLoader()
+def test_kotd_brackets(loader):
     tournament = Tournament('/ageofempires/King_of_the_Desert/4')
     tournament.load_advanced(loader)
     assert len(tournament.rounds) == 3
 
-def test_transfers():
-    loader = VcrLoader()
+def test_transfers(loader):
     manager = TransferManager(loader)
     assert len(manager.transfers) == 30
     transfer = manager.transfers[0]
@@ -367,8 +381,7 @@ def test_transfers():
     assert transfer.old == 'Dark Empire'
     assert transfer.new == None
 
-def test_recent_transfers():
-    loader = VcrLoader()
+def test_recent_transfers(loader):
     manager = TransferManager(loader)
     assert len(manager.recent_transfers()) == 0
     transfers = manager.recent_transfers(date(2022, 1, 13))
@@ -385,9 +398,9 @@ def test_wtv(tournament_manager):
     tournament.load_advanced(tournament_manager.loader)
     assert len(tournament.participants) == 32
 
-def test_missing_prizepool_table(tournament_manager):
+def test_missing_prizepool_table(loader):
     tournament = Tournament("/ageofempires/Regicide_Rumble/4")
-    tournament.load_advanced(tournament_manager.loader)
+    tournament.load_advanced(loader)
 
 def test_no_category_url(tournament_manager):
     tournaments = tournament_manager.all()
@@ -397,13 +410,27 @@ def test_no_category_url(tournament_manager):
     tournament.load_advanced(tournament_manager.loader)
     assert not tournament.first_place_url
 
-def test_no_start(tournament_manager):
+def test_no_start(loader):
     tournament = Tournament('/ageofempires/Rusaoc_Cup/77')
-    tournament.load_advanced(tournament_manager.loader)
+    tournament.load_advanced(loader)
     assert tournament.start
 
-def test_participant_link(tournament_manager):
+def test_participant_link(loader):
     tournament = Tournament('/ageofempires/Only_Land_French_Cup')
-    tournament.load_advanced(tournament_manager.loader)
+    tournament.load_advanced(loader)
     assert tournament.start
-    
+
+def test_dnp(loader):
+    tournament = Tournament('/ageofempires/Empire_Wars_Duo/2')
+    tournament.load_advanced(loader)
+    team = tournament.teams['GamerLegion_B']
+    assert len(team['members']) == 2
+
+def test_match_results(loader):
+    manager = MatchResultsManager(loader)
+    assert len(manager.match_results) == 50
+    result = manager.match_results[0]
+    assert result.winner == 'JorDan_AoE'
+    assert result.loser == 'Daniel'
+    assert result.date == date(2022, 3, 16)
+    assert result.tournament == '/ageofempires/Deep_Waters_Gaming/Pro_League/2'

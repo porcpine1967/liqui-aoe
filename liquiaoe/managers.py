@@ -7,6 +7,7 @@ import re
 import bs4
 
 PARTICIPANTS = re.compile(r"([0-9]+)")
+TEAM_PATTERN = re.compile(r"(2v2|3v3|4v4)")
 
 from liquiaoe.loaders import RequestsException
 
@@ -146,6 +147,7 @@ class Tournament:
         self.team = False
         self.runners_up = []
         self.rounds = []
+        self.teams = {}
         self.placements = defaultdict(str)
 
     def __str__(self):
@@ -206,10 +208,10 @@ class Tournament:
     def load_match(self, node):
         match = {"played": True, "winner": None, "loser": None,
                  "winner_url": None, "loser_url": None,}
-        players = {}
         urls = {}
         winner = ''
         loser = ''
+        ctr = 0
         for div in node.find_all("div"):
             if class_starts_with("bracket-cell-r", div):
                 name = ''
@@ -220,25 +222,25 @@ class Tournament:
                     winner = name
                 else:
                     loser = name
-            if class_in_node("bracket-popup-header-vs-child", div):
+            if class_in_node("bracket-popup-header-vs-child", div) or class_in_node("bracket-popup-team", div):
                 for a in div.find_all("a"):
                     if a.text:
-                        players[a.text] = liquipedia_key(a)
-                        urls[a.text] = valid_href(a)
+                        if (winner and ctr) or (loser and not ctr):
+                            match["loser"] = liquipedia_key(a)
+                            match["loser_url"] = valid_href(a)
+                        else:
+                            match["winner"] = liquipedia_key(a)
+                            match["winner_url"] = valid_href(a)
+                        ctr += 1
+                        if ctr > 1:
+                            break
             if class_in_node("bracket-score", div):
                 if div.text in ("W", "FF"):
                     match["played"] = False
-        match["winner"] = players.get(winner)
-        match["loser"] = players.get(loser)
-        match["winner_url"] = urls.get(winner)
-        match["loser_url"] = urls.get(loser)
         return match
 
     def load_participants(self, node, prize_table):
-        if not self.placements:
-            self.load_all_places(prize_table)
-        if self.team:
-            return
+
         for h2 in node.find_all("h2", recursive=True):
             if "Participants" in h2.text:
                 break
@@ -247,6 +249,17 @@ class Tournament:
         participant_node = h2
         while participant_node.name != 'div':
             participant_node = next_tag(participant_node)
+        if self.team:
+            team_nodes = next_tag(participant_node)
+            for node in team_nodes.find_all('div'):
+                if class_in_node('template-box', node):
+                    team_info = self.team_info(node)
+                    self.teams[team_info['url']] = team_info
+
+        if not self.placements:
+            self.load_all_places(prize_table)
+        if self.team:
+            return
         try:
             player_row = node_from_class(participant_node, "player-row")
         except ParserError:
@@ -268,36 +281,27 @@ class Tournament:
     def team_name_from_node(self, node, column_index):
             columns = node.find_all("td")
             links = columns[column_index].find_all("a")
-            team_name = links[-1].text.strip()
+            team_name = liquipedia_key(links[-1])
             try:
-                members = self.team_members(team_name, node.parent.parent)
-                return "{} ({})".format(team_name,
+                team = self.teams[team_name]
+                members = [x[0] for x in team['members']]
+                return "{} ({})".format(team['name'],
                                         ", ".join(members))
             except (IndexError, ParserError):
                 return team_name
-
-    def team_members(self, team_name, node):
-        team_column = node_from_class(node.parent.parent, "template-box")
-
-        while team_column:
-            team = node_from_class(team_column, "template-box")
-            while team:
-                team_dict = self.team_info(team)
-                if team_dict["name"] == team_name:
-                    return team_dict["members"]
-                team = team.next_sibling
-            team_column = team_column.next_sibling
-        return []
 
     def team_info(self, node):
         team_node = node_from_class(node, "teamcard")
         team_dict = dict()
         team_dict["name"] = team_node.center.text
+        team_dict["url"] = liquipedia_key(team_node.center.a)
         team_dict["members"] = []
         member_row = team_node.div.table.tr
         while member_row:
-            tds = member_row.find_all("td")
-            team_dict["members"].append(tds[-1].text.strip())
+            td = member_row.find_all("td")[-1]
+            if not 'DNP' in td.text:
+                last_a = td.find_all('a')[-1]
+                team_dict["members"].append((td.text.strip(), valid_href(last_a),))
             member_row = member_row.next_sibling
         return team_dict
 
@@ -371,7 +375,7 @@ class Tournament:
                     self.format_style = text_from_tag(div, "div")
                     if 'FFA' or '1v1' in self.format_style:
                         self.team = False
-                    if "2v2" in self.format_style:
+                    if TEAM_PATTERN.search(self.format_style):
                         self.team = True
                 if div.div.text == "Sponsor(s):":
                     self.sponsors = div_attributes(div)
@@ -431,6 +435,8 @@ class Tournament:
             first_place = spans[-1].text.strip()
             if not first_place or first_place == "TBD":
                 return
+            if class_starts_with("team", spans[-1]):
+                self.team = True
             self.first_place = first_place
             self.first_place_url = valid_href(spans[-1].a)
         except (AttributeError, IndexError):
@@ -528,6 +534,45 @@ class Transfer:
                     self.ref = div.a.attrs['href']
                 except AttributeError:
                     pass
+
+class MatchResultsManager:
+    PORTAL = '/ageofempires/Liquipedia:Upcoming_and_ongoing_matches'
+    def __init__(self, loader):
+        self.loader = loader
+        self._match_results = []
+
+    @property
+    def match_results(self):
+        if not self._match_results:
+            data = self.loader.soup(self.PORTAL)
+            for node in data.find_all('table'):
+                if class_in_node('infobox_matches_content', node):
+                    result = MatchResult(node)
+                    if result.winner:
+                        self._match_results.append(MatchResult(node))
+
+        return self._match_results
+
+class MatchResult:
+    def __init__(self, table):
+        self.winner = None
+        self.loser = None
+        self.date = None
+        self.tournament = None
+        rows = table.find_all('tr')
+        for td in rows[0].find_all('td'):
+            style = td.attrs.get('style')
+            css_class = td.attrs.get('class')
+            if css_class == ['versus']:
+                pass
+            elif style == "font-weight:bold;":
+                self.winner = td.text.strip()
+            else:
+                self.loser = td.text.strip()
+        match = rows[1].td
+        date_str = match.span.text.split('-')[0].strip()
+        self.date = datetime.strptime(date_str, '%B %d, %Y').date()
+        self.tournament = valid_href(match.div.div.a)
 
 class ParserError(Exception):
     """ What to throw if something critical missing from soup."""
