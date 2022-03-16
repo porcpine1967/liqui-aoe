@@ -434,3 +434,11 @@ def test_match_results(loader):
     assert result.loser == 'Daniel'
     assert result.date == date(2022, 3, 16)
     assert result.tournament == '/ageofempires/Deep_Waters_Gaming/Pro_League/2'
+
+    result = manager.match_results[2]
+    assert result.winner == 'Alex_vazquez99'
+    assert result.loser == 'Holland89'
+
+    result = manager.match_results[3]
+    assert result.loser == 'BruH'
+    

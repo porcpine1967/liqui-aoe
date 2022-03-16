@@ -550,7 +550,6 @@ class MatchResultsManager:
                     result = MatchResult(node)
                     if result.winner:
                         self._match_results.append(MatchResult(node))
-
         return self._match_results
 
 class MatchResult:
@@ -560,15 +559,21 @@ class MatchResult:
         self.date = None
         self.tournament = None
         rows = table.find_all('tr')
-        for td in rows[0].find_all('td'):
+        for idx, td in enumerate(rows[0].find_all('td')):
             style = td.attrs.get('style')
             css_class = td.attrs.get('class')
-            if css_class == ['versus']:
-                pass
-            elif style == "font-weight:bold;":
-                self.winner = td.text.strip()
+            anchors = td.find_all('a')
+            if not anchors:
+                continue
+            if idx == 0:
+                name = liquipedia_key(anchors[0])
             else:
-                self.loser = td.text.strip()
+                name = liquipedia_key(anchors[-1])
+            if style == "font-weight:bold;":
+                self.winner = name
+            else:
+                self.loser = name
+
         match = rows[1].td
         date_str = match.span.text.split('-')[0].strip()
         self.date = datetime.strptime(date_str, '%B %d, %Y').date()
