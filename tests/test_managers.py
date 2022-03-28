@@ -442,3 +442,9 @@ def test_match_results(loader):
     result = manager.match_results[3]
     assert result.loser == 'BruH'
     
+def test_team_node(loader):
+    tournament = Tournament('/ageofempires/Copa_Wallace')
+    tournament.load_advanced(loader)
+    assert len(tournament.teams) == 8
+
+    

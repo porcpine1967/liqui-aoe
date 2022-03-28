@@ -11,6 +11,7 @@ TEAM_PATTERN = re.compile(r"(2v2|3v3|4v4)")
 
 from liquiaoe.loaders import RequestsException
 
+
 class TournamentManager:
     def __init__(self, loader, url="/ageofempires/Portal:Tournaments"):
         self._tournaments = []
@@ -19,26 +20,26 @@ class TournamentManager:
         self.load()
 
     def completed(self, timebox):
-        """ Makes sure the end_date is between the dates."""
+        """Makes sure the end_date is between the dates."""
         tournaments = defaultdict(list)
         for tournament in self._tournaments:
-            if  timebox[0] <= tournament.end <= timebox[1]:
+            if timebox[0] <= tournament.end <= timebox[1]:
                 tournaments[tournament.game].append(tournament)
         return tournaments
 
     def ongoing(self, timestamp):
-        """ Makes sure the tournament starts before and ends after timestamp."""
+        """Makes sure the tournament starts before and ends after timestamp."""
         tournaments = defaultdict(list)
         for tournament in self._tournaments:
-            if  tournament.start <= timestamp <= tournament.end:
+            if tournament.start <= timestamp <= tournament.end:
                 tournaments[tournament.game].append(tournament)
         return tournaments
 
     def starting(self, timebox):
-        """ Makes sure the start date is between the dates."""
+        """Makes sure the start date is between the dates."""
         tournaments = defaultdict(list)
         for tournament in self._tournaments:
-            if  timebox[0] <= tournament.start <= timebox[1]:
+            if timebox[0] <= tournament.start <= timebox[1]:
                 tournaments[tournament.game].append(tournament)
         return tournaments
 
@@ -70,11 +71,13 @@ class TournamentManager:
                     self._tournaments.append(tournament)
             start = start.next_sibling
 
+
 def class_in_node(css_class, node):
     try:
         return css_class in node.attrs["class"]
     except (AttributeError, KeyError):
         return False
+
 
 def class_starts_with(css_class, node):
     try:
@@ -85,20 +88,23 @@ def class_starts_with(css_class, node):
         pass
     return False
 
+
 def liquipedia_key(anchor_tag):
-    """ returns key name for player used in path or as title for missing page"""
+    """returns key name for player used in path or as title for missing page"""
     href = anchor_tag.attrs["href"]
     if "redlink" in href:
-        _, attrs = href.split('?')
-        for attr_pair in attrs.split('&'):
-            if attr_pair.startswith('title='):
+        _, attrs = href.split("?")
+        for attr_pair in attrs.split("&"):
+            if attr_pair.startswith("title="):
                 return attr_pair[6:]
     else:
-        return href.split('/')[-1]
+        return href.split("/")[-1]
+
 
 def valid_href(anchor_tag):
     href = anchor_tag.attrs["href"]
     return None if "redlink" in href else href
+
 
 def node_from_class(ancestor, class_attribute):
     for node in ancestor.descendants:
@@ -106,9 +112,11 @@ def node_from_class(ancestor, class_attribute):
             return node
     raise ParserError("{} missing".format(class_attribute))
 
+
 def text_from_tag(parent, tag):
     divs = parent.find_all(tag)
     return divs[-1].text.strip()
+
 
 def div_attributes(parent):
     divs = parent.find_all("div")
@@ -119,6 +127,7 @@ def div_attributes(parent):
             attributes.append(string)
     return attributes
 
+
 def next_tag(first_tag):
     sibling = first_tag.next_sibling
     while sibling:
@@ -127,17 +136,21 @@ def next_tag(first_tag):
         sibling = sibling.next_sibling
     return None
 
+
 class Tournament:
     def __init__(self, url=""):
         self.url = url
         # Basic attributes (loaded from tournaments page)
         self.name = self.game = self.tier = self.prize = self.loader_prize = ""
-        self.start = self.end = self.first_place = self.first_place_url = self.second_place = None
+        self.start = (
+            self.end
+        ) = self.first_place = self.first_place_url = self.second_place = None
         self.loader_place = None
         self.participant_count = -1
         self.cancelled = False
         self.series = None
         # Advanced (loaded from tournament page)
+        self.loaded = False
         self.participants = []
         self.organizers = []
         self.sponsors = []
@@ -154,7 +167,7 @@ class Tournament:
         return self.name
 
     def load_from_player(self, row):
-        """ Adds attributes from player_row."""
+        """Adds attributes from player_row."""
         tds = row.find_all("td")
         self.end = datetime.strptime(tds[0].text, "%Y-%m-%d").date()
         self.loader_place = tds[1].font.text
@@ -166,7 +179,10 @@ class Tournament:
         self.loader_prize = tds[10].text.strip()
 
     def load_advanced(self, loader):
-        """ Call the loader for self.url and parse."""
+        """Call the loader for self.url and parse."""
+        if self.loaded:
+            return
+        self.loaded = True
         soup = loader.soup(self.url)
         main = node_from_class(soup, "mw-parser-output")
         if not main:
@@ -180,8 +196,8 @@ class Tournament:
             prize_table = node_from_class(main, "prizepooltable")
             self.load_participants(main, prize_table)
             brackets = []
-            for div in main.find_all('div'):
-                if class_in_node('bracket', div):
+            for div in main.find_all("div"):
+                if class_in_node("bracket", div):
                     brackets.append(div)
             if brackets:
                 self.load_bracket(brackets[-1])
@@ -206,15 +222,20 @@ class Tournament:
         self.rounds.append(matches)
 
     def load_match(self, node):
-        match = {"played": True, "winner": None, "loser": None,
-                 "winner_url": None, "loser_url": None,}
+        match = {
+            "played": True,
+            "winner": None,
+            "loser": None,
+            "winner_url": None,
+            "loser_url": None,
+        }
         urls = {}
-        winner = ''
-        loser = ''
+        winner = ""
+        loser = ""
         ctr = 0
         for div in node.find_all("div"):
             if class_starts_with("bracket-cell-r", div):
-                name = ''
+                name = ""
                 for string in div.stripped_strings:
                     name = string
                     break
@@ -222,7 +243,9 @@ class Tournament:
                     winner = name
                 else:
                     loser = name
-            if class_in_node("bracket-popup-header-vs-child", div) or class_in_node("bracket-popup-team", div):
+            if class_in_node("bracket-popup-header-vs-child", div) or class_in_node(
+                "bracket-popup-team", div
+            ):
                 for a in div.find_all("a"):
                     if a.text:
                         if (winner and ctr) or (loser and not ctr):
@@ -247,14 +270,14 @@ class Tournament:
         else:
             return
         participant_node = h2
-        while participant_node.name != 'div':
+        while participant_node.name != "div":
             participant_node = next_tag(participant_node)
         if self.team:
             team_nodes = next_tag(participant_node)
-            for node in team_nodes.find_all('div'):
-                if class_in_node('template-box', node):
+            for node in team_nodes.find_all("div"):
+                if class_in_node("template-box", node):
                     team_info = self.team_info(node)
-                    self.teams[team_info['url']] = team_info
+                    self.teams[team_info["url"]] = team_info
 
         if not self.placements:
             self.load_all_places(prize_table)
@@ -267,28 +290,28 @@ class Tournament:
             return
         while player_row:
             for td in player_row.find_all("td"):
-                if not td.text or not td.span or 'TBD' in td.text:
+                if not td.text or not td.span or "TBD" in td.text:
                     continue
                 span = td.find_all("span")[1]
                 name = liquipedia_key(span.a)
                 href = valid_href(span.a)
-                data = self.placements[name] or (False, '',)
+                data = self.placements[name] or (
+                    False,
+                    "",
+                )
                 self.participants.append((name, href, *data))
             player_row = next_tag(player_row)
 
-
-
     def team_name_from_node(self, node, column_index):
-            columns = node.find_all("td")
-            links = columns[column_index].find_all("a")
-            team_name = liquipedia_key(links[-1])
-            try:
-                team = self.teams[team_name]
-                members = [x[0] for x in team['members']]
-                return "{} ({})".format(team['name'],
-                                        ", ".join(members))
-            except (IndexError, ParserError):
-                return team_name
+        columns = node.find_all("td")
+        links = columns[column_index].find_all("a")
+        team_name = liquipedia_key(links[-1])
+        try:
+            team = self.teams[team_name]
+            members = [x[0] for x in team["members"]]
+            return "{} ({})".format(team["name"], ", ".join(members))
+        except (IndexError, ParserError, KeyError):
+            return team_name
 
     def team_info(self, node):
         team_node = node_from_class(node, "teamcard")
@@ -296,17 +319,25 @@ class Tournament:
         team_dict["name"] = team_node.center.text
         team_dict["url"] = liquipedia_key(team_node.center.a)
         team_dict["members"] = []
-        member_row = team_node.div.table.tr
+        for div in team_node.find_all('div'):
+            if div.table:
+                member_row = div.table.tr
+                break
         while member_row:
             td = member_row.find_all("td")[-1]
-            if not 'DNP' in td.text:
-                last_a = td.find_all('a')[-1]
-                team_dict["members"].append((td.text.strip(), valid_href(last_a),))
+            if not "DNP" in td.text:
+                last_a = td.find_all("a")[-1]
+                team_dict["members"].append(
+                    (
+                        td.text.strip(),
+                        valid_href(last_a),
+                    )
+                )
             member_row = member_row.next_sibling
         return team_dict
 
     def load_all_places(self, prize_table):
-        """ Loads all places."""
+        """Loads all places."""
         idx = self.name_column_index(prize_table)
         current_place = ""
         current_prize = ""
@@ -319,9 +350,9 @@ class Tournament:
             if "rowspan" in tds[0].attrs:
                 current_place = tds[0].text.strip()
                 current_prize = tds[1].text.strip()
-                current_prize = '' if current_prize == '-' else current_prize
+                current_prize = "" if current_prize == "-" else current_prize
                 name_idx = idx
-            if 'TBD' in tds[name_idx].text:
+            if "TBD" in tds[name_idx].text:
                 continue
             links = tds[name_idx].find_all("a")
             if not links:
@@ -329,25 +360,34 @@ class Tournament:
             name = links[-1].text.strip()
             if self.team:
                 name = self.team_name_from_node(row, name_idx)
-            self.placements[liquipedia_key(links[-1])] = (current_place, current_prize,)
-            if current_place.startswith('1st'):
-                places[1] = [name, valid_href(links[-1]),]
-            elif current_place.startswith('2nd'):
+            self.placements[liquipedia_key(links[-1])] = (
+                current_place,
+                current_prize,
+            )
+            if current_place.startswith("1st"):
+                places[1] = [
+                    name,
+                    valid_href(links[-1]),
+                ]
+            elif current_place.startswith("2nd"):
                 places[2].append(name)
-            elif current_place.startswith('3rd'):
+            elif current_place.startswith("3rd"):
                 places[3].append(name)
-            elif current_place == '4th':
+            elif current_place == "4th":
                 places[4].append(name)
         if places[1]:
             self.first_place, self.first_place_url = places[1]
         if places[2]:
             self.second_place = " - ".join(places[2])
-        for place in (3,4,):
+        for place in (
+            3,
+            4,
+        ):
             if places[place]:
                 self.runners_up.append(" - ".join(places[place]))
 
     def name_column_index(self, node):
-        """ Looks at the headers to find the approiate index for the name"""
+        """Looks at the headers to find the approiate index for the name"""
         column_header = "Team" if self.team else "Player"
         ths = node.find_all("th", recursive=True)
         for idx, th in enumerate(ths):
@@ -360,20 +400,23 @@ class Tournament:
                 return idx
 
     def load_info_box(self, info_box):
-        """ Parse information from info box"""
+        """Parse information from info box"""
         for div in info_box.find_all("div"):
             try:
                 if not self.prize and div.div.text == "Prize pool:":
                     self.prize = text_from_tag(div, "div")
                 if div.div.text == "Series:":
                     self.series = text_from_tag(div, "div")
-                if div.div.text in ("Organizer:", "Organizers:",):
+                if div.div.text in (
+                    "Organizer:",
+                    "Organizers:",
+                ):
                     self.organizers = div_attributes(div)
                 if div.div.text == "Game Mode:":
                     self.game_mode = text_from_tag(div, "div")
                 if div.div.text == "Format:":
                     self.format_style = text_from_tag(div, "div")
-                    if 'FFA' or '1v1' in self.format_style:
+                    if "FFA" or "1v1" in self.format_style:
                         self.team = False
                     if TEAM_PATTERN.search(self.format_style):
                         self.team = True
@@ -454,6 +497,7 @@ class Tournament:
         except (AttributeError, IndexError):
             pass
 
+
 class PlayerManager:
     def __init__(self, loader):
         self.loader = loader
@@ -478,8 +522,10 @@ class PlayerManager:
                 player_tournaments.append(tournament)
         return player_tournaments
 
+
 class TransferManager:
-    PORTAL = '/ageofempires/Portal:Transfers'
+    PORTAL = "/ageofempires/Portal:Transfers"
+
     def __init__(self, loader):
         self.loader = loader
         self._transfers = []
@@ -488,13 +534,13 @@ class TransferManager:
     def transfers(self):
         if not self._transfers:
             data = self.loader.soup(self.PORTAL)
-            for node in data.find_all('div'):
-                if class_in_node('divRow', node):
+            for node in data.find_all("div"):
+                if class_in_node("divRow", node):
                     self._transfers.append(Transfer(node))
         return self._transfers
 
     def recent_transfers(self, now=None):
-        """ Transfers in the past week.
+        """Transfers in the past week.
         'now' for testing."""
         recent = []
         now = now or datetime.now().date()
@@ -504,6 +550,7 @@ class TransferManager:
                 recent.append(transfer)
         return recent
 
+
 class Transfer:
     def __init__(self, row):
         self.date = self.old = self.new = self.ref = None
@@ -511,32 +558,37 @@ class Transfer:
         self.load(row)
 
     def load(self, row):
-        for div in row.find_all('div'):
-            if class_in_node('Date', div):
+        for div in row.find_all("div"):
+            if class_in_node("Date", div):
                 self.date = date.fromisoformat(div.text)
-            if class_in_node('Name', div):
-                for a in div.find_all('a'):
+            if class_in_node("Name", div):
+                for a in div.find_all("a"):
                     if a.text:
-                        player = (a.text, valid_href(a),)
+                        player = (
+                            a.text,
+                            valid_href(a),
+                        )
                         self.players.append(player)
-            if class_in_node('OldTeam', div):
-                for a in div.find_all('a'):
-                    if 'title' in a.attrs:
-                        self.old = a.attrs['title']
+            if class_in_node("OldTeam", div):
+                for a in div.find_all("a"):
+                    if "title" in a.attrs:
+                        self.old = a.attrs["title"]
                         break
-            if class_in_node('NewTeam', div):
-                for a in div.find_all('a'):
-                    if 'title' in a.attrs:
-                        self.new = a.attrs['title']
+            if class_in_node("NewTeam", div):
+                for a in div.find_all("a"):
+                    if "title" in a.attrs:
+                        self.new = a.attrs["title"]
                         break
-            if class_in_node('Ref', div):
+            if class_in_node("Ref", div):
                 try:
-                    self.ref = div.a.attrs['href']
+                    self.ref = div.a.attrs["href"]
                 except AttributeError:
                     pass
 
+
 class MatchResultsManager:
-    PORTAL = '/ageofempires/Liquipedia:Upcoming_and_ongoing_matches'
+    PORTAL = "/ageofempires/Liquipedia:Upcoming_and_ongoing_matches"
+
     def __init__(self, loader):
         self.loader = loader
         self._match_results = []
@@ -545,12 +597,13 @@ class MatchResultsManager:
     def match_results(self):
         if not self._match_results:
             data = self.loader.soup(self.PORTAL)
-            for node in data.find_all('table'):
-                if class_in_node('infobox_matches_content', node):
+            for node in data.find_all("table"):
+                if class_in_node("infobox_matches_content", node):
                     result = MatchResult(node)
                     if result.winner:
                         self._match_results.append(MatchResult(node))
         return self._match_results
+
 
 class MatchResult:
     def __init__(self, table):
@@ -558,11 +611,11 @@ class MatchResult:
         self.loser = None
         self.date = None
         self.tournament = None
-        rows = table.find_all('tr')
-        for idx, td in enumerate(rows[0].find_all('td')):
-            style = td.attrs.get('style')
-            css_class = td.attrs.get('class')
-            anchors = td.find_all('a')
+        rows = table.find_all("tr")
+        for idx, td in enumerate(rows[0].find_all("td")):
+            style = td.attrs.get("style")
+            css_class = td.attrs.get("class")
+            anchors = td.find_all("a")
             if not anchors:
                 continue
             if idx == 0:
@@ -575,9 +628,11 @@ class MatchResult:
                 self.loser = name
 
         match = rows[1].td
-        date_str = match.span.text.split('-')[0].strip()
-        self.date = datetime.strptime(date_str, '%B %d, %Y').date()
+        date_str = match.span.text.split("-")[0].strip()
+        self.date = datetime.strptime(date_str, "%B %d, %Y").date()
         self.tournament = valid_href(match.div.div.a)
+    def __repr__(self):
+        return "{} beat {} at {}".format(self.winner, self.loser, self.tournament)
 
 class ParserError(Exception):
-    """ What to throw if something critical missing from soup."""
+    """What to throw if something critical missing from soup."""
