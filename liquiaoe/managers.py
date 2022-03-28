@@ -162,6 +162,7 @@ class Tournament:
         self.rounds = []
         self.teams = {}
         self.placements = defaultdict(str)
+        self.matches = []
 
     def __str__(self):
         return self.name
@@ -198,6 +199,7 @@ class Tournament:
         try:
             prize_table = node_from_class(main, "prizepooltable")
             self.load_participants(main, prize_table)
+            self.load_matches(main)
             brackets = []
             for div in main.find_all("div"):
                 if class_in_node("bracket", div):
@@ -206,6 +208,14 @@ class Tournament:
                 self.load_bracket(brackets[-1])
         except ParserError:
             pass
+
+    def load_matches(self, page):
+        for match_node in page.find_all("div", recursive=True):
+            if class_in_node("bracket-game", match_node):
+                match = self.load_match(match_node)
+                if match['winner'] and match['loser']:
+                    self.matches.append(match)
+
 
     def load_bracket(self, node):
         for bracket_round in node.find_all("div"):
@@ -236,6 +246,7 @@ class Tournament:
         winner = ""
         loser = ""
         ctr = 0
+
         for div in node.find_all("div"):
             if class_starts_with("bracket-cell-r", div):
                 key = ""
@@ -251,6 +262,8 @@ class Tournament:
                 if not key or key == 'TBD':
                     continue
                 try:
+                    if class_in_node('bracket-player-middle', div.div):
+                        continue
                     if self.team:
                         team = self.teams[key]
                         name = team['url']

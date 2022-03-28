@@ -217,9 +217,7 @@ def test_series_tournament(tournament_manager):
     assert tournament.series == "Ayre Pro Tour"
 
 def test_multiple_organizers(tournament_manager):
-    tournaments = tournament_manager.all()
-    tournament = tournaments[16]
-    assert tournament.name == "Master of HyperRandom"
+    tournament = Tournament("/ageofempires/Master_of_HyperRandom")
     tournament.load_advanced(tournament_manager.loader)
     assert len(tournament.organizers) == 2
     assert tournament.organizers == ["Zetnus", "Huehuecoyotl22",]
@@ -449,3 +447,12 @@ def test_team_node(loader):
     assert len(tournament.teams) == 8
 
     
+def test_double_elimination(loader):
+    tournament = Tournament("/ageofempires/Master_of_HyperRandom")
+    tournament.load_advanced(loader)
+    assert len(tournament.matches) == 78
+    matches = tournament.matches
+    assert matches[0]['winner'] == 'Villese'
+    assert matches[0]['loser'] == 'Rey_Fer'
+    assert matches[-1]['winner'] == 'Villese'
+    assert matches[-1]['loser'] == 'TaToH'
