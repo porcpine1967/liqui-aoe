@@ -168,6 +168,7 @@ def test_other_team_tournament(tournament_manager):
     assert tournament.name == "AoE4 Pro League"
     tournament.load_advanced(tournament_manager.loader)
     assert tournament.team
+    print(tournament.teams)
     assert tournament.rounds[0][0]['winner'] == 'Beasty_and_the_STRAELBORAAAAAS'
     assert tournament.rounds[1][0]['winner'] == 'Beasty_and_the_STRAELBORAAAAAS'
     assert tournament.rounds[2][0]['loser'] == 'Beasty_and_the_STRAELBORAAAAAS'
@@ -267,7 +268,7 @@ def test_participants_wwc(tournament_manager):
     assert len(tournament.participants) == 64
     assert tournament.participants[0] == ("ACCM", "/ageofempires/ACCM", '9th-16th', '$500',)
     assert tournament.participants[5] == ("Capoch", "/ageofempires/Capoch", '5th-8th', '$812.50',)
-    assert tournament.participants[-1] == ("Tomate", None, '33rd-64th', '',)
+    assert tournament.participants[55] == ("Tomate", None, '33rd-64th', '',)
     for name, url, _, _ in tournament.participants:
         try:
             url_name = url.split('/')[-1]
@@ -423,7 +424,7 @@ def test_participant_link(loader):
 def test_dnp(loader):
     tournament = Tournament('/ageofempires/Empire_Wars_Duo/2')
     tournament.load_advanced(loader)
-    team = tournament.teams['GamerLegion_B']
+    team = tournament.teams['GamerLegion B']
     assert len(team['members']) == 2
 
 def test_match_results(loader):

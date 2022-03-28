@@ -151,7 +151,7 @@ class Tournament:
         self.series = None
         # Advanced (loaded from tournament page)
         self.loaded = False
-        self.participants = []
+        self.participant_lookup = {}
         self.organizers = []
         self.sponsors = []
         self.game_mode = None
@@ -166,6 +166,9 @@ class Tournament:
     def __str__(self):
         return self.name
 
+    @property
+    def participants(self):
+        return sorted(self.participant_lookup.values())
     def load_from_player(self, row):
         """Adds attributes from player_row."""
         tds = row.find_all("td")
@@ -235,28 +238,38 @@ class Tournament:
         ctr = 0
         for div in node.find_all("div"):
             if class_starts_with("bracket-cell-r", div):
-                name = ""
-                for string in div.stripped_strings:
-                    name = string
-                    break
-                if "font-weight:bold" == div.attrs.get("style"):
-                    winner = name
+                key = ""
+                if self.team:
+                    try:
+                        key = div.span.attrs['data-highlightingclass']
+                    except (AttributeError, KeyError):
+                        continue
                 else:
-                    loser = name
-            if class_in_node("bracket-popup-header-vs-child", div) or class_in_node(
-                "bracket-popup-team", div
-            ):
-                for a in div.find_all("a"):
-                    if a.text:
-                        if (winner and ctr) or (loser and not ctr):
-                            match["loser"] = liquipedia_key(a)
-                            match["loser_url"] = valid_href(a)
-                        else:
-                            match["winner"] = liquipedia_key(a)
-                            match["winner_url"] = valid_href(a)
-                        ctr += 1
-                        if ctr > 1:
-                            break
+                    for string in div.stripped_strings:
+                        key = string
+                        break
+                if not key or key == 'TBD':
+                    continue
+                try:
+                    if self.team:
+                        team = self.teams[key]
+                        name = team['url']
+                        url = "/ageofempires/{}".format(team['url'])
+                    else:
+                        player = self.participant_lookup[key]
+                        name = player[0]
+                        url = player[1]
+                    if "font-weight:bold" == div.attrs.get("style"):
+                        match['winner'] = name
+                        match['winner_url'] = url
+                    else:
+                        match['loser'] = name
+                        match['loser_url'] = url
+                except KeyError:
+                    if "font-weight:bold" == div.attrs.get("style"):
+                        winner = key
+                    else:
+                        loser = key
             if class_in_node("bracket-score", div):
                 if div.text in ("W", "FF"):
                     match["played"] = False
@@ -277,7 +290,7 @@ class Tournament:
             for node in team_nodes.find_all("div"):
                 if class_in_node("template-box", node):
                     team_info = self.team_info(node)
-                    self.teams[team_info["url"]] = team_info
+                    self.teams[team_info["name"]] = team_info
 
         if not self.placements:
             self.load_all_places(prize_table)
@@ -299,13 +312,13 @@ class Tournament:
                     False,
                     "",
                 )
-                self.participants.append((name, href, *data))
+                self.participant_lookup[span.a.text] = (name, href, *data)
             player_row = next_tag(player_row)
 
     def team_name_from_node(self, node, column_index):
         columns = node.find_all("td")
         links = columns[column_index].find_all("a")
-        team_name = liquipedia_key(links[-1])
+        team_name = links[-1].text
         try:
             team = self.teams[team_name]
             members = [x[0] for x in team["members"]]
