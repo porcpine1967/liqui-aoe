@@ -169,13 +169,13 @@ def test_other_team_tournament(tournament_manager):
     tournament.load_advanced(tournament_manager.loader)
     assert tournament.team
     print(tournament.teams)
-    assert tournament.rounds[0][0]['winner'] == 'Beasty_and_the_STRAELBORAAAAAS'
-    assert tournament.rounds[1][0]['winner'] == 'Beasty_and_the_STRAELBORAAAAAS'
-    assert tournament.rounds[2][0]['loser'] == 'Beasty_and_the_STRAELBORAAAAAS'
-    assert tournament.rounds[0][1]['winner'] == 'White_Wolf_Palace'
-    assert tournament.rounds[0][1]['winner_url'] == '/ageofempires/White_Wolf_Palace'
-    assert tournament.rounds[0][3]['loser'] == 'Vietnam_Legends'
-    assert tournament.rounds[0][3]['loser_url'] == '/ageofempires/Vietnam_Legends'
+    assert tournament.rounds[0][0].winner == 'Beasty_and_the_STRAELBORAAAAAS'
+    assert tournament.rounds[1][0].winner == 'Beasty_and_the_STRAELBORAAAAAS'
+    assert tournament.rounds[2][0].loser == 'Beasty_and_the_STRAELBORAAAAAS'
+    assert tournament.rounds[0][1].winner == 'White_Wolf_Palace'
+    assert tournament.rounds[0][1].winner_url == '/ageofempires/White_Wolf_Palace'
+    assert tournament.rounds[0][3].loser == 'Vietnam_Legends'
+    assert tournament.rounds[0][3].loser_url == '/ageofempires/Vietnam_Legends'
 
 def test_simple_tournament(tournament_manager):
     tournaments = tournament_manager.all()
@@ -296,25 +296,25 @@ def test_brackets(tournament_manager):
     assert len(tournament.rounds[0]) == 32
 
     match = tournament.rounds[0][5]
-    assert match["played"]
-    assert match["winner"] == "The_Dragonstar"
-    assert match["loser"] == "Faraday"
-    assert match["winner_url"] == "/ageofempires/The_Dragonstar"
-    assert match["loser_url"] == "/ageofempires/Faraday"
+    assert match.played
+    assert match.winner == "The_Dragonstar"
+    assert match.loser == "Faraday"
+    assert match.winner_url == "/ageofempires/The_Dragonstar"
+    assert match.loser_url == "/ageofempires/Faraday"
 
     match = tournament.rounds[0][6]
-    assert not match["played"]
-    assert match["winner"] == "Liereyy"
-    assert match["loser"] == "Tomate"
-    assert match["winner_url"] == "/ageofempires/Liereyy"
-    assert match["loser_url"] == None
+    assert not match.played
+    assert match.winner == "Liereyy"
+    assert match.loser == "Tomate"
+    assert match.winner_url == "/ageofempires/Liereyy"
+    assert match.loser_url == None
 
     match = tournament.rounds[1][0]
-    assert match["played"]
-    assert match["winner"] == "Villese"
-    assert match["loser"] == "Overtaken"
-    assert match["winner_url"] == "/ageofempires/Villese"
-    assert match["loser_url"] == "/ageofempires/Overtaken"
+    assert match.played
+    assert match.winner == "Villese"
+    assert match.loser == "Overtaken"
+    assert match.winner_url == "/ageofempires/Villese"
+    assert match.loser_url == "/ageofempires/Overtaken"
 
     start = 32
     for round_ in tournament.rounds:
@@ -446,15 +446,14 @@ def test_team_node(loader):
     tournament.load_advanced(loader)
     assert len(tournament.teams) == 8
 
-    
 def test_double_elimination(loader):
     tournament = Tournament("/ageofempires/Master_of_HyperRandom")
     tournament.load_advanced(loader)
     assert len(tournament.matches) == 78
     matches = tournament.matches
-    assert matches[0]['winner'] == 'Villese'
-    assert matches[0]['loser'] == 'Rey_Fer'
-    assert matches[0]['date'] == date(2021, 12, 22)
-    assert matches[-1]['winner'] == 'Villese'
-    assert matches[-1]['loser'] == 'TaToH'
-    assert matches[-1]['date'] == date(2022, 2, 17)
+    assert matches[0].winner == 'Villese'
+    assert matches[0].loser == 'Rey_Fer'
+    assert matches[0].date == date(2021, 12, 22)
+    assert matches[-1].winner == 'Villese'
+    assert matches[-1].loser == 'TaToH'
+    assert matches[-1].date == date(2022, 2, 17)

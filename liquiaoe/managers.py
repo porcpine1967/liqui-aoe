@@ -212,8 +212,8 @@ class Tournament:
     def load_matches(self, page):
         for match_node in page.find_all("div", recursive=True):
             if class_in_node("bracket-game", match_node):
-                match = self.load_match(match_node)
-                if match['winner'] and match['loser']:
+                match = MatchResult(match_node, self)
+                if match.winner and match.loser:
                     self.matches.append(match)
 
 
@@ -231,72 +231,10 @@ class Tournament:
         matches = []
         for match in node.find_all("div"):
             if class_in_node("bracket-game", match):
-                matches.append(self.load_match(match))
+                matches.append(MatchResult(match, self))
         self.rounds.append(matches)
 
-    def load_match(self, node):
-        match = {
-            "played": True,
-            "winner": None,
-            "loser": None,
-            "winner_url": None,
-            "loser_url": None,
-            "date": "?",
-        }
-        urls = {}
-        winner = ""
-        loser = ""
-        ctr = 0
-        debug = 'Villese' in node.text and 'Rey Fer' in node.text
-        for div in node.find_all("div"):
-            if class_starts_with("bracket-cell-r", div):
-                key = ""
-                if self.team:
-                    try:
-                        key = div.span.attrs['data-highlightingclass']
-                    except (AttributeError, KeyError):
-                        continue
-                else:
-                    for string in div.stripped_strings:
-                        key = string
-                        break
-                if not key or key == 'TBD':
-                    continue
-                try:
-                    if class_in_node('bracket-player-middle', div.div):
-                        continue
-                    if self.team:
-                        team = self.teams[key]
-                        name = team['url']
-                        url = "/ageofempires/{}".format(team['url'])
-                    else:
-                        player = self.participant_lookup[key]
-                        name = player[0]
-                        url = player[1]
-                    if "font-weight:bold" == div.attrs.get("style"):
-                        match['winner'] = name
-                        match['winner_url'] = url
-                    else:
-                        match['loser'] = name
-                        match['loser_url'] = url
-                except KeyError:
-                    if "font-weight:bold" == div.attrs.get("style"):
-                        winner = key
-                    else:
-                        loser = key
-            if class_in_node("bracket-popup-body-time", div):
-                date_str = div.text.split('-')[0].strip()
-                try:
-                    match["date"] = datetime.strptime(date_str, '%B %d, %Y').date()
-                except ValueError:
-                    pass
-            if class_in_node("bracket-score", div):
-                if div.text in ("W", "FF"):
-                    match["played"] = False
-        return match
-
     def load_participants(self, node, prize_table):
-
         for h2 in node.find_all("h2", recursive=True):
             if "Participants" in h2.text:
                 break
@@ -633,17 +571,76 @@ class MatchResultsManager:
             for node in data.find_all("table"):
                 if class_in_node("infobox_matches_content", node):
                     result = MatchResult(node)
-                    if result.winner:
+                    if result.played:
                         self._match_results.append(MatchResult(node))
         return self._match_results
 
 
 class MatchResult:
-    def __init__(self, table):
+    def __init__(self, node, tournament=None):
         self.winner = None
         self.loser = None
+        self.winner_url = None
+        self.loser_url = None
         self.date = None
         self.tournament = None
+        self.played = True
+        if node.name == 'table':
+            self._build_from_table(node)
+        else:
+            self._build_from_bracket(node, tournament)
+        if not self.winner:
+            self.played = False
+
+    def _build_from_bracket(self, node, tournament):
+        self.tournament = tournament.url
+        for div in node.find_all("div"):
+            if class_starts_with("bracket-cell-r", div):
+                key = ""
+                if tournament.team:
+                    try:
+                        key = div.span.attrs['data-highlightingclass']
+                    except (AttributeError, KeyError):
+                        continue
+                else:
+                    for string in div.stripped_strings:
+                        key = string
+                        break
+                if not key or key == 'TBD':
+                    continue
+                try:
+                    if class_in_node('bracket-player-middle', div.div):
+                        continue
+                    if tournament.team:
+                        team = tournament.teams[key]
+                        name = team['url']
+                        url = "/ageofempires/{}".format(team['url'])
+                    else:
+                        player = tournament.participant_lookup[key]
+                        name = player[0]
+                        url = player[1]
+                    if "font-weight:bold" == div.attrs.get("style"):
+                        self.winner = name
+                        self.winner_url = url
+                    else:
+                        self.loser = name
+                        self.loser_url = url
+                except KeyError:
+                    if "font-weight:bold" == div.attrs.get("style"):
+                        winner = key
+                    else:
+                        loser = key
+            if class_in_node("bracket-popup-body-time", div):
+                date_str = div.text.split('-')[0].strip()
+                try:
+                    self.date = datetime.strptime(date_str, '%B %d, %Y').date()
+                except ValueError:
+                    pass
+            if class_in_node("bracket-score", div):
+                if div.text in ("W", "FF"):
+                    self.played = False
+
+    def _build_from_table(self, table):
         rows = table.find_all("tr")
         for idx, td in enumerate(rows[0].find_all("td")):
             style = td.attrs.get("style")
@@ -664,6 +661,7 @@ class MatchResult:
         date_str = match.span.text.split("-")[0].strip()
         self.date = datetime.strptime(date_str, "%B %d, %Y").date()
         self.tournament = valid_href(match.div.div.a)
+
     def __repr__(self):
         return "{} beat {} at {}".format(self.winner, self.loser, self.tournament)
 
