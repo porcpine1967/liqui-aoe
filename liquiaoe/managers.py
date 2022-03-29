@@ -241,12 +241,13 @@ class Tournament:
             "loser": None,
             "winner_url": None,
             "loser_url": None,
+            "date": "?",
         }
         urls = {}
         winner = ""
         loser = ""
         ctr = 0
-
+        debug = 'Villese' in node.text and 'Rey Fer' in node.text
         for div in node.find_all("div"):
             if class_starts_with("bracket-cell-r", div):
                 key = ""
@@ -283,6 +284,12 @@ class Tournament:
                         winner = key
                     else:
                         loser = key
+            if class_in_node("bracket-popup-body-time", div):
+                date_str = div.text.split('-')[0].strip()
+                try:
+                    match["date"] = datetime.strptime(date_str, '%B %d, %Y').date()
+                except ValueError:
+                    pass
             if class_in_node("bracket-score", div):
                 if div.text in ("W", "FF"):
                     match["played"] = False

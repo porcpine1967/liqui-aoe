@@ -454,5 +454,7 @@ def test_double_elimination(loader):
     matches = tournament.matches
     assert matches[0]['winner'] == 'Villese'
     assert matches[0]['loser'] == 'Rey_Fer'
+    assert matches[0]['date'] == date(2021, 12, 22)
     assert matches[-1]['winner'] == 'Villese'
     assert matches[-1]['loser'] == 'TaToH'
+    assert matches[-1]['date'] == date(2022, 2, 17)
