@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from collections import Counter
 from datetime import date
 import pytest
 from liquiaoe.managers import Tournament, TournamentManager, PlayerManager, TransferManager, MatchResultsManager
@@ -457,3 +458,7 @@ def test_double_elimination(loader):
     assert matches[-1].winner == 'Villese'
     assert matches[-1].loser == 'TaToH'
     assert matches[-1].date == date(2022, 2, 17)
+
+def test_no_infobox_tournament(loader):
+    tournament = Tournament('/ageofempires/Golden_League/Round/1')
+    tournament.load_advanced(loader)

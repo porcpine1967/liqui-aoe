@@ -195,7 +195,10 @@ class Tournament:
             self.description = main.p.text.strip()
         except AttributeError:
             self.description = ""
-        self.load_info_box(node_from_class(main, "fo-nttax-infobox"))
+        try:
+            self.load_info_box(node_from_class(main, "fo-nttax-infobox"))
+        except ParserError:
+            pass
         try:
             prize_table = node_from_class(main, "prizepooltable")
             self.load_participants(main, prize_table)
@@ -215,7 +218,6 @@ class Tournament:
                 match = MatchResult(match_node, self)
                 if match.winner and match.loser:
                     self.matches.append(match)
-
 
     def load_bracket(self, node):
         for bracket_round in node.find_all("div"):
