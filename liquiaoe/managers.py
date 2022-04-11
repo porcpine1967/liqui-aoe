@@ -5,6 +5,7 @@ from datetime import date, datetime, timedelta
 import re
 
 import bs4
+import yaml
 
 PARTICIPANTS = re.compile(r"([0-9]+)")
 TEAM_PATTERN = re.compile(r"(2v2|3v3|4v4)")
@@ -70,7 +71,19 @@ class TournamentManager:
                         break
                     self._tournaments.append(tournament)
             start = start.next_sibling
-
+    def load_extra(self, filepath):
+        """ load yaml from filepath and add extra tournaments to manager"""
+        with open(filepath) as f:
+            data = yaml.safe_load(f)
+        for tournament_data in data:
+            tournament = Tournament(tournament_data['url'])
+            tournament.name = tournament_data['name']
+            tournament.start = tournament_data['start']
+            tournament.end = tournament_data['end']
+            tournament.game = tournament_data['game']
+            tournament.tier = tournament_data['tier']
+            tournament.prize = str(tournament_data['prize'])
+            self._tournaments.append(tournament)
 
 def class_in_node(css_class, node):
     try:
@@ -250,7 +263,8 @@ class Tournament:
             for node in team_nodes.find_all("div"):
                 if class_in_node("template-box", node):
                     team_info = self.team_info(node)
-                    self.teams[team_info["name"]] = team_info
+                    if team_info:
+                        self.teams[team_info["name"]] = team_info
 
         if not self.placements:
             self.load_all_places(prize_table)
@@ -290,6 +304,8 @@ class Tournament:
         team_node = node_from_class(node, "teamcard")
         team_dict = dict()
         team_dict["name"] = team_node.center.text
+        if team_dict['name'] == 'TBD':
+            return
         team_dict["url"] = liquipedia_key(team_node.center.a)
         team_dict["members"] = []
         for div in team_node.find_all('div'):

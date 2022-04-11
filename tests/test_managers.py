@@ -462,3 +462,17 @@ def test_double_elimination(loader):
 def test_no_infobox_tournament(loader):
     tournament = Tournament('/ageofempires/Golden_League/Round/1')
     tournament.load_advanced(loader)
+
+def test_subtournament_yaml(loader):
+    manager = TournamentManager(loader)
+    manager.load_extra('tests/data/subtournament.yaml')
+    assert len(manager.all()) == 61
+    tournament = manager.all()[-1]
+    assert tournament.url == '/ageofempires/MFO_AOC_Tourney'
+    tournament.load_advanced(loader)
+    assert tournament.sponsors[0] == "Almojo"
+
+def test_team_tbd(loader):
+    tournament = Tournament('/ageofempires/Terra_Nova_Duos')
+    tournament.load_advanced(loader)
+    assert len(tournament.teams) == 8
