@@ -76,7 +76,7 @@ class TournamentManager:
         with open(filepath) as f:
             data = yaml.safe_load(f)
         for tournament_data in data:
-            tournament = Tournament(tournament_data['url'])
+            tournament = Tournament(tournament_data['url'], extra=True)
             tournament.name = tournament_data['name']
             tournament.start = tournament_data['start']
             tournament.end = tournament_data['end']
@@ -151,8 +151,9 @@ def next_tag(first_tag):
 
 
 class Tournament:
-    def __init__(self, url=""):
+    def __init__(self, url="", extra=False):
         self.url = url
+        self.extra = extra
         # Basic attributes (loaded from tournaments page)
         self.name = self.game = self.tier = self.prize = self.loader_prize = ""
         self.start = (

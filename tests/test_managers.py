@@ -469,6 +469,7 @@ def test_subtournament_yaml(loader):
     assert len(manager.all()) == 61
     tournament = manager.all()[-1]
     assert tournament.url == '/ageofempires/MFO_AOC_Tourney'
+    assert tournament.extra
     tournament.load_advanced(loader)
     assert tournament.sponsors[0] == "Almojo"
 
