@@ -233,6 +233,14 @@ class Tournament:
                 if match.winner and match.loser:
                     self.matches.append(match)
 
+        for table_node in page.find_all("table", recursive=True):
+            if class_in_node("matchlist", table_node):
+                for match_node in table_node.find_all("tr"):
+                    if class_in_node("match-row", match_node):
+                        match = MatchResult(match_node, self)
+                        if match.winner and match.loser:
+                            self.matches.append(match)
+
     def load_bracket(self, node):
         for bracket_round in node.find_all("div"):
             if class_in_node("bracket-column-matches", bracket_round):
@@ -606,10 +614,41 @@ class MatchResult:
         self.played = True
         if node.name == 'table':
             self._build_from_table(node)
+        elif node.name == 'tr':
+            self._build_from_row(node, tournament)
         else:
             self._build_from_bracket(node, tournament)
         if not self.winner:
             self.played = False
+
+    def _build_from_row(self, node, tournament):
+        self.tournament = tournament.url
+        lookup = {}
+        for td in node.find_all('td'):
+            if class_in_node('matchlistslot', td):
+                if class_in_node('bg-win', td):
+                    self.winner = td.text.strip()
+                    try:
+                        self.winner_url = tournament.participant_lookup[self.winner][1]
+                    except KeyError:
+                        pass
+                else:
+                    self.loser = td.text.strip()
+                    try:
+                        self.loser_url = tournament.participant_lookup[self.loser][1]
+                    except KeyError:
+                        pass
+            else:
+                for div in td.find_all('div'):
+                    if class_in_node("bracket-popup-body-time", div):
+                        self._date_from_node(div)
+
+    def _date_from_node(self, div):
+        date_str = div.text.split('-')[0].strip()
+        try:
+            self.date = datetime.strptime(date_str, '%B %d, %Y').date()
+        except ValueError:
+            pass
 
     def _build_from_bracket(self, node, tournament):
         self.tournament = tournament.url
@@ -650,11 +689,8 @@ class MatchResult:
                     else:
                         loser = key
             if class_in_node("bracket-popup-body-time", div):
-                date_str = div.text.split('-')[0].strip()
-                try:
-                    self.date = datetime.strptime(date_str, '%B %d, %Y').date()
-                except ValueError:
-                    pass
+                self._date_from_node(div)
+
             if class_in_node("bracket-score", div):
                 if div.text in ("W", "FF"):
                     self.played = False
@@ -682,7 +718,7 @@ class MatchResult:
         self.tournament = valid_href(match.div.div.a)
 
     def __repr__(self):
-        return "{} beat {} at {}".format(self.winner, self.loser, self.tournament)
+        return "{} beat {} at {} at {}".format(self.winner, self.loser, self.tournament, self.date)
 
 class ParserError(Exception):
     """What to throw if something critical missing from soup."""

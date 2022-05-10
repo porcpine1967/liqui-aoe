@@ -459,6 +459,17 @@ def test_double_elimination(loader):
     assert matches[-1].loser == 'TaToH'
     assert matches[-1].date == date(2022, 2, 17)
 
+def test_group(loader):
+    tournament = Tournament("/ageofempires/The_Resurgence")
+    tournament.load_advanced(loader)
+    assert len(tournament.matches) == 8
+    match = tournament.matches[0]
+    assert match.winner == 'Yo'
+    assert match.winner_url == '/ageofempires/Yo'
+    assert match.loser == 'miguel'
+    assert match.loser_url == '/ageofempires/Miguel'
+    assert match.date == date(2022, 5, 7)
+
 def test_no_infobox_tournament(loader):
     tournament = Tournament('/ageofempires/Golden_League/Round/1')
     tournament.load_advanced(loader)
