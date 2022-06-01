@@ -466,7 +466,7 @@ def test_group(loader):
     match = tournament.matches[0]
     assert match.winner == 'Yo'
     assert match.winner_url == '/ageofempires/Yo'
-    assert match.loser == 'miguel'
+    assert match.loser == 'Miguel'
     assert match.loser_url == '/ageofempires/Miguel'
     assert match.date == date(2022, 5, 7)
 
@@ -488,3 +488,25 @@ def test_team_tbd(loader):
     tournament = Tournament('/ageofempires/Terra_Nova_Duos')
     tournament.load_advanced(loader)
     assert len(tournament.teams) == 8
+
+def test_winner_name(loader):
+    expected_winners = set((
+        'Capoch',
+        'Hera',
+        'The_Dragonstar',
+        'Yo',
+        'Valas',
+        'Villese',
+        'Barles',
+        'Nicov',
+        'Classicpro',
+        'JorDan_AoE',
+        'Dogao',
+        'Vinchester',
+        'ACCM',
+        'DauT',
+    ))
+    tournament = Tournament('/ageofempires/Only_Land_Cup')
+    tournament.load_advanced(loader)
+    for match in tournament.matches:
+        assert match.winner in expected_winners

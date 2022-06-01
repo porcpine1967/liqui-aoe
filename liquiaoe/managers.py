@@ -627,17 +627,19 @@ class MatchResult:
         for td in node.find_all('td'):
             if class_in_node('matchlistslot', td):
                 if class_in_node('bg-win', td):
-                    self.winner = td.text.strip()
+                    winner = td.text.strip()
                     try:
-                        self.winner_url = tournament.participant_lookup[self.winner][1]
+                        self.winner = tournament.participant_lookup[winner][0]
+                        self.winner_url = tournament.participant_lookup[winner][1]
                     except KeyError:
-                        pass
+                        self.winner = winner
                 else:
-                    self.loser = td.text.strip()
+                    loser = td.text.strip()
                     try:
-                        self.loser_url = tournament.participant_lookup[self.loser][1]
+                        self.loser = tournament.participant_lookup[loser][0]
+                        self.loser_url = tournament.participant_lookup[loser][1]
                     except KeyError:
-                        pass
+                        self.loser = loser
             else:
                 for div in td.find_all('div'):
                     if class_in_node("bracket-popup-body-time", div):
