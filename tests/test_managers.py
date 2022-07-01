@@ -510,3 +510,23 @@ def test_winner_name(loader):
     tournament.load_advanced(loader)
     for match in tournament.matches:
         assert match.winner in expected_winners
+
+def test_match_score(loader):
+    tournament = Tournament('/ageofempires/Only_Land_Cup')
+    tournament.load_advanced(loader)
+    match = tournament.matches[0]
+    assert match.winner == 'Capoch'
+    assert match.loser == 'BadBoy'
+    assert match.score == '2-1'
+
+    tournament = Tournament('/ageofempires/Aorus_League/3')
+    tournament.load_advanced(loader)
+    match = tournament.matches[0]
+    assert match.winner == 'Nicov'
+    assert match.loser == 'Monoz'
+    assert match.score == '2-0'
+    
+    match = tournament.matches[6]
+    assert match.winner == 'TaToH'
+    assert match.loser == 'Nicov'
+    assert match.score == 'Forfeit'

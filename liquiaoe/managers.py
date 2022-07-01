@@ -9,6 +9,7 @@ import yaml
 
 PARTICIPANTS = re.compile(r"([0-9]+)")
 TEAM_PATTERN = re.compile(r"(2v2|3v3|4v4)")
+INTEGER = re.compile(r"^[0-9]+$")
 
 from liquiaoe.loaders import RequestsException
 
@@ -612,6 +613,7 @@ class MatchResult:
         self.date = None
         self.tournament = None
         self.played = True
+        self.score = ''
         if node.name == 'table':
             self._build_from_table(node)
         elif node.name == 'tr':
@@ -622,8 +624,10 @@ class MatchResult:
             self.played = False
 
     def _build_from_row(self, node, tournament):
+        """ From round-robin/swiss brackets """
         self.tournament = tournament.url
         lookup = {}
+        scores = []
         for td in node.find_all('td'):
             if class_in_node('matchlistslot', td):
                 if class_in_node('bg-win', td):
@@ -644,6 +648,15 @@ class MatchResult:
                 for div in td.find_all('div'):
                     if class_in_node("bracket-popup-body-time", div):
                         self._date_from_node(div)
+                try:
+                    if INTEGER.match(td.contents[0]):
+                        scores.append(int(td.contents[0]))
+                        
+                except AttributeError:
+                    pass
+
+        if len(scores) == 2:
+            self.score = '{}-{}'.format(*sorted(scores, reverse=True))
 
     def _date_from_node(self, div):
         date_str = div.text.split('-')[0].strip()
@@ -654,6 +667,7 @@ class MatchResult:
 
     def _build_from_bracket(self, node, tournament):
         self.tournament = tournament.url
+        scores = []
         for div in node.find_all("div"):
             if class_starts_with("bracket-cell-r", div):
                 key = ""
@@ -696,8 +710,17 @@ class MatchResult:
             if class_in_node("bracket-score", div):
                 if div.text in ("W", "FF"):
                     self.played = False
+                    self.score = 'Forfeit'
+                else:
+                    try:
+                        scores.append(int(div.text))
+                    except ValueError:
+                        pass
+        if len(scores) == 2:
+            self.score = '{}-{}'.format(*sorted(scores, reverse=True))
 
     def _build_from_table(self, table):
+        """ From ongoing matches table"""
         rows = table.find_all("tr")
         for idx, td in enumerate(rows[0].find_all("td")):
             style = td.attrs.get("style")
