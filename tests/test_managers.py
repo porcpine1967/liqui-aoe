@@ -530,3 +530,17 @@ def test_match_score(loader):
     assert match.winner == 'TaToH'
     assert match.loser == 'Nicov'
     assert match.score == 'Forfeit'
+
+def test_participants_JMB(loader):
+    tournament = Tournament('/ageofempires/JorDan%27s_Medieval_Brawl/Season_1/Finals')
+    tournament.load_advanced(loader)
+    assert len(tournament.participants) == 8
+
+def test_golden_league_finals(loader):
+    tournament = Tournament('/ageofempires/Golden_League')
+    tournament.load_advanced(loader)
+    assert len(tournament.participants) == 64
+    for name, url, placement, prize in tournament.participants:
+        if name == 'MarineLorD':
+            assert placement == '1st'
+            assert prize == '$36,250'

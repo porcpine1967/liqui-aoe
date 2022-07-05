@@ -215,7 +215,14 @@ class Tournament:
         except ParserError:
             pass
         try:
-            prize_table = node_from_class(main, "prizepooltable")
+            for prize_table in soup.find_all('table', {'class': 'prizepooltable'}):
+                try:
+                    node_from_class(prize_table, 'background-color-first-place')
+                    break
+                except ParserError:
+                    continue
+            else:
+                return
             self.load_participants(main, prize_table)
             self.load_matches(main)
             brackets = []
@@ -268,6 +275,7 @@ class Tournament:
         participant_node = h2
         while participant_node.name != "div":
             participant_node = next_tag(participant_node)
+
         if self.team:
             team_nodes = next_tag(participant_node)
             for node in team_nodes.find_all("div"):
@@ -280,11 +288,12 @@ class Tournament:
             self.load_all_places(prize_table)
         if self.team:
             return
-        try:
-            player_row = node_from_class(participant_node, "player-row")
-        except ParserError:
-            # nbd, just nothing there
-            return
+        player_row = None
+        while participant_node and not player_row:
+            try:
+                player_row = node_from_class(participant_node, "player-row")
+            except ParserError:
+                participant_node = next_tag(participant_node)                
         while player_row:
             for td in player_row.find_all("td"):
                 if not td.text or not td.span or "TBD" in td.text:
