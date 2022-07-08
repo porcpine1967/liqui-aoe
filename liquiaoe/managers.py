@@ -22,23 +22,31 @@ class TournamentManager:
         self.load()
 
     def completed(self, timebox):
-        """Makes sure the end_date is between the dates."""
+        """Makes sure the end_date is between the dates (inclusive)."""
         tournaments = defaultdict(list)
         for tournament in self._tournaments:
             if timebox[0] <= tournament.end <= timebox[1]:
                 tournaments[tournament.game].append(tournament)
         return tournaments
 
-    def ongoing(self, timestamp):
-        """Makes sure the tournament starts before and ends after timestamp."""
+    def ending(self, timebox):
+        """Makes sure the tournament starts before (exclusive) and ends within (inclusive) timebox."""
         tournaments = defaultdict(list)
         for tournament in self._tournaments:
-            if tournament.start <= timestamp <= tournament.end:
+            if tournament.start < timebox[0] <= tournament.end <= timebox[1]:
+                tournaments[tournament.game].append(tournament)
+        return tournaments
+
+    def ongoing(self, timebox):
+        """Makes sure the tournament starts before and ends after timebox (exclusive)."""
+        tournaments = defaultdict(list)
+        for tournament in self._tournaments:
+            if tournament.start < timebox[0] and tournament.end > timebox[1]:
                 tournaments[tournament.game].append(tournament)
         return tournaments
 
     def starting(self, timebox):
-        """Makes sure the start date is between the dates."""
+        """Makes sure the start date is between the dates (inclusive)."""
         tournaments = defaultdict(list)
         for tournament in self._tournaments:
             if timebox[0] <= tournament.start <= timebox[1]:

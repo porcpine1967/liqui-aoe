@@ -101,12 +101,22 @@ def test_starting(tournament_manager):
     assert len(starting_tournaments["Age of Empires Online"]) == 1
     assert len(starting_tournaments["Age of Mythology"]) == 1
 
+def test_ending(tournament_manager):
+    """ Tests tournament filter."""
+    timebox = (date(2022, 1, 26), date(2022, 2, 1),)
+    ending_tournaments = tournament_manager.ending(timebox)
+    assert len(ending_tournaments["Age of Empires II"]) == 5
+    assert len(ending_tournaments["Age of Empires IV"]) == 2
+    assert len(ending_tournaments["Age of Empires Online"]) == 0
+    assert len(ending_tournaments["Age of Mythology"]) == 0
+
 def test_ongoing(tournament_manager):
     """ Tests tournament filter."""
-    timestamp = date(2022, 1, 26)
-    ongoing_tournaments = tournament_manager.ongoing(timestamp)
-    assert len(ongoing_tournaments["Age of Empires II"]) == 11
-    assert len(ongoing_tournaments["Age of Empires IV"]) == 4
+    timebox = (date(2022, 1, 26), date(2022, 2, 1),)
+    ongoing_tournaments = tournament_manager.ongoing(timebox)
+    ctr = Counter()
+    assert len(ongoing_tournaments["Age of Empires II"]) == 6
+    assert len(ongoing_tournaments["Age of Empires IV"]) == 1
     assert len(ongoing_tournaments["Age of Empires Online"]) == 0
     assert len(ongoing_tournaments["Age of Mythology"]) == 2
 
