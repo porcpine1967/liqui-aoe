@@ -668,7 +668,10 @@ class MatchResult:
                 try:
                     if INTEGER.match(td.contents[0]):
                         scores.append(int(td.contents[0]))
-                        
+                    elif td.contents[0] in ("W", "FF"):
+                        self.played = False
+                        self.score = 'Forfeit'
+
                 except AttributeError:
                     pass
 

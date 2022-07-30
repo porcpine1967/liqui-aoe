@@ -554,3 +554,10 @@ def test_golden_league_finals(loader):
         if name == 'MarineLorD':
             assert placement == '1st'
             assert prize == '$36,250'
+
+def test_match_date(loader):
+    tournament = Tournament('/ageofempires/T90_Titans_League/1/Gold_League')
+    tournament.load_advanced(loader)
+    for match in tournament.matches:
+        if match.winner and match.loser:
+            assert match.date or match.score == 'Forfeit'
