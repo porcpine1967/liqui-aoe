@@ -514,9 +514,39 @@ class Tournament:
             pass
 
 
+class PlayerMatch:
+    def __init__(self, row):
+        tds = row.find_all("td")
+        self.end = datetime.strptime(tds[0].text, "%Y-%m-%d").date()
+        self.tier = tds[2].a.text
+        self.game = tds[3].span.a.attrs["title"]
+        self.tournament_name = tds[5].text
+        self.tournament_url = tds[5].a.attrs["href"]
+        self.played = 'W' not in (tds[6].text, tds[8].text)
+        
 class PlayerManager:
     def __init__(self, loader):
         self.loader = loader
+
+    def matches(self, player_url):
+        player_matches = []
+        if "index" in player_url:
+            return player_matches
+        url = "{}/Matches".format(player_url)
+        try:
+            data = self.loader.soup(url)
+        except (RequestsException) as ex:
+            if ex.code == 404:
+                data = self.loader.soup(player_url)
+            else:
+                raise
+        results_table = node_from_class(data, "wikitable")
+        for node in results_table.descendants:
+            if node.name == "tr" and len(node.find_all("td")) == 11:
+                player_matches.append(PlayerMatch(node))
+        
+        return player_matches
+        
 
     def tournaments(self, player_url):
         player_tournaments = []
@@ -631,6 +661,7 @@ class MatchResult:
         self.tournament = None
         self.played = True
         self.score = ''
+        self.game = None
         if node.name == 'table':
             self._build_from_table(node)
         elif node.name == 'tr':

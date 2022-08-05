@@ -561,3 +561,22 @@ def test_match_date(loader):
     for match in tournament.matches:
         if match.winner and match.loser:
             assert match.date or match.score == 'Forfeit'
+
+def test_player_matches(loader):
+    manager = PlayerManager(loader)
+    matches = manager.matches('/ageofempires/JorDan_AoE')
+    match = matches[0]
+    assert match.end == date(2022, 7, 29)
+    assert match.tier == 'S-Tier'
+    assert match.game == 'Age of Empires II'
+    assert match.tournament_name == 'T90 Titans League: Platinum League'
+    assert match.tournament_url == '/ageofempires/T90_Titans_League/1/Platinum_League'
+    assert match.played
+    match = matches[58]
+    assert match.end == date(2022, 1, 4)
+    assert match.tier == 'A-Tier'
+    assert match.game == 'Age of Empires IV'
+    assert match.tournament_name == 'Winter Series 2'
+    assert match.tournament_url == '/ageofempires/Winter_Series/2'
+    assert not match.played
+    assert not matches[204].played
