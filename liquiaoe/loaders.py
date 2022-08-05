@@ -40,9 +40,9 @@ class HttpsLoader:
         self.actually_calling(path)
         if self.last_call + self.throttle(path) > time.time():
             time.sleep(self.last_call + self.throttle(path) - time.time())
+        self.update_last_call(path)
         url = self._base_url.format(tail(path))
         response = self.fetch_response(url, path)
-        self.update_last_call(path)
         if response.status_code == 200:
             info = response.json()
             try:
