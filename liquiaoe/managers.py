@@ -222,6 +222,7 @@ class Tournament:
             self.load_info_box(node_from_class(main, "fo-nttax-infobox"))
         except ParserError:
             pass
+        prize_table = None
         try:
             for prize_table in soup.find_all('table', {'class': 'prizepooltable'}):
                 try:
@@ -229,8 +230,6 @@ class Tournament:
                     break
                 except ParserError:
                     continue
-            else:
-                return
             self.load_participants(main, prize_table)
             self.load_matches(main)
             brackets = []
@@ -354,6 +353,8 @@ class Tournament:
 
     def load_all_places(self, prize_table):
         """Loads all places."""
+        if not prize_table:
+            return
         idx = self.name_column_index(prize_table)
         current_place = ""
         current_prize = ""

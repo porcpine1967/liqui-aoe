@@ -580,3 +580,8 @@ def test_player_matches(loader):
     assert match.tournament_url == '/ageofempires/Winter_Series/2'
     assert not match.played
     assert not matches[204].played
+
+def test_prize_pool_div(loader):
+    tournament = Tournament('/ageofempires/Death_Match_World_Cup/5/Qualifier')
+    tournament.load_advanced(loader)
+    assert len(tournament.matches) == 182
