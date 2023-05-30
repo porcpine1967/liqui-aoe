@@ -61,16 +61,16 @@ class TournamentManager:
         """Parses information in loader and adds to _tournaments."""
         data = self.loader.soup(self.url)
 
-        start = node_from_class(data, "tournament-card")
+        start = node_from_class(data, "tournamentCard")
         loaded = set()
         while start:
-            if not class_in_node("tournament-card", start):
+            if not class_in_node("tournamentCard", start):
                 start = start.next_sibling
                 continue
 
             rows = start.find_all("div")
             for row in rows:
-                if class_in_node("divRow", row):
+                if class_in_node("gridRow", row):
                     tournament = Tournament()
                     tournament.load_from_portal(row)
                     if tournament.url in loaded:
@@ -450,23 +450,29 @@ class Tournament:
                 pass
 
     def load_from_portal(self, row):
-        divs = row.find_all("div")
-        self.load_header(divs[0])
-        self.load_dates(divs[1].text)
-        self.prize = divs[2].text.strip()
-        self.load_participant_count(divs[3].text)
+        divs = row.find_all("div", recursive=False)
+        self.load_tier(divs[0])
+        self.load_game(divs[1])
+        self.load_name_url(divs[2])
+        self.load_dates(divs[3].text)
+        self.prize = divs[4].text.strip()
+        self.load_participant_count(divs[6].text)
         self.first_place = self.first_place_url = self.second_place = None
-        self.load_first_place_from_row(divs[5])
-        if self.first_place:
-            self.load_second_place(divs[6])
+        self.load_first_place_from_row(divs[7])
+        if self.first_place and len(divs) == 9:
+            self.load_second_place(divs[8])
 
-    def load_header(self, row):
+    def load_tier(self, row):
         """Load the first five attributes."""
-        self.tier = row.a.text.strip()
-        spans = row.find_all("span")
-        self.game = spans[0].a.attrs["title"]
-        self.url = row.b.a.attrs["href"]
-        self.name = row.b.text.strip()
+        self.tier = row.text.strip()
+
+    def load_game(self, row):
+        self.game = row.a.attrs["title"]
+
+    def load_name_url(self, row):
+        for a in row.find_all('a'):
+            self.url = a.attrs["href"]
+        self.name = row.text.strip()
 
     def load_dates(self, text):
         if " - " in text:
