@@ -280,11 +280,10 @@ class Tournament:
 
         if self.team:
             team_nodes = next_tag(participant_node)
-            for node in team_nodes.find_all("div"):
-                if class_in_node("template-box", node):
-                    team_info = self.team_info(node)
-                    if team_info:
-                        self.teams[team_info["name"]] = team_info
+            for node in team_nodes.find_all("div", {"class": "teamcard"}):
+                team_info = self.team_info(node)
+                if team_info:
+                    self.teams[team_info["name"]] = team_info
 
         if not self.placements:
             self.load_all_places(prize_table)
@@ -318,29 +317,35 @@ class Tournament:
         except (IndexError, ParserError, KeyError):
             return team_name
 
-    def team_info(self, node):
-        team_node = node_from_class(node, "teamcard")
+    def team_info(self, team_node):
         team_dict = dict()
-        team_dict["name"] = team_node.center.text
-        if team_dict['name'] == 'TBD':
+        try:
+            team_dict["name"] = team_node.center.a.text
+            if team_dict['name'] == 'TBD':
+                return
+        except AttributeError:
             return
+
         team_dict["url"] = liquipedia_key(team_node.center.a)
         team_dict["members"] = []
         for div in team_node.find_all('div'):
             if div.table:
                 member_row = div.table.tr
                 break
-        while member_row:
-            td = member_row.find_all("td")[-1]
-            if not "DNP" in td.text:
-                last_a = td.find_all("a")[-1]
-                team_dict["members"].append(
-                    (
-                        td.text.strip(),
-                        valid_href(last_a),
-                    )
-                )
-            member_row = member_row.next_sibling
+        for table in team_node.find_all('table',{'class': 'list'}):
+            for member_row in table.find_all('tr'):
+                td = member_row.find_all("td")[-1]
+                if not "DNP" in td.text:
+                    try:
+                        last_a = td.find_all("a")[-1]
+                        team_dict["members"].append(
+                            (
+                                td.text.strip(),
+                                valid_href(last_a),
+                            )
+                        )
+                    except IndexError:
+                        pass
         return team_dict
 
     def load_all_places(self, prize_table):

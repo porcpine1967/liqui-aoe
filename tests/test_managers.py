@@ -561,9 +561,12 @@ def test_prize_pool_div(loader):
 
 
 def test_exclude_tbd_from_multiple_participants(loader):
-    # just no null pointer
     tournament = Tournament('/ageofempires/AoE2_Admirals_League/2')
     tournament.load_advanced(loader)
     placed = [x for x in tournament.placements.values() if x]
     assert len(placed) == 9
 
+def test_handle_substitutes_in_team_rosters(loader):
+    tournament = Tournament('/ageofempires/Rising_Empires_League/1/Division/1')
+    tournament.load_advanced(loader)
+    assert (len(tournament.teams['Saint Peter']['members'])) == 5
