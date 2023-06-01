@@ -135,20 +135,13 @@ def node_from_class(ancestor, class_attribute):
     raise ParserError("{} missing".format(class_attribute))
 
 
-def text_from_tag(parent, tag):
-    divs = parent.find_all(tag)
-    return divs[-1].text.strip()
+def text_from_tag(sibling, tag):
+    return sibling.next_sibling.text
 
-
-def div_attributes(parent):
-    divs = parent.find_all("div")
-    attributes = list()
-
-    for div in divs[1:]:
-        for string in div.stripped_strings:
-            attributes.append(string)
-    return attributes
-
+def div_attributes(div):
+    attributes = []
+    div = div.next_sibling
+    return [string for string in div.stripped_strings]
 
 def next_tag(first_tag):
     sibling = first_tag.next_sibling
@@ -193,17 +186,20 @@ class Tournament:
     @property
     def participants(self):
         return sorted(self.participant_lookup.values())
-    def load_from_player(self, row):
+    def load_from_player(self, row, player_url):
         """Adds attributes from player_row."""
+        player_name = player_url.split('/')[-1]
         tds = row.find_all("td")
         self.end = datetime.strptime(tds[0].text, "%Y-%m-%d").date()
-        self.loader_place = tds[1].font.text
+        self.loader_place = tds[1].text
         self.tier = tds[2].a.text
-        self.team = tds[3].text.lower() == "team"
-        self.game = tds[4].span.a.attrs["title"]
+        self.game = tds[3].a.attrs["title"]
         self.name = tds[5].text
-        self.url = tds[6].a.attrs["href"]
-        self.loader_prize = tds[10].text.strip()
+        self.url = tds[5].a.attrs["href"]
+        self.team = tds[6].attrs['data-sort-value'] != player_name
+        prize = tds[9].text.strip()
+        if prize != '-':
+            self.loader_prize = prize
 
     def load_advanced(self, loader):
         """Call the loader for self.url and parse."""
@@ -224,7 +220,7 @@ class Tournament:
             pass
         prize_table = None
         try:
-            for prize_table in soup.find_all('table', {'class': 'prizepooltable'}):
+            for prize_table in soup.find_all('div', {'class': 'prizepooltable'}):
                 try:
                     node_from_class(prize_table, 'background-color-first-place')
                     break
@@ -247,7 +243,6 @@ class Tournament:
                 match = MatchResult(match_node, self)
                 if match.winner and match.loser:
                     self.matches.append(match)
-
         for table_node in page.find_all("table", recursive=True):
             if class_in_node("matchlist", table_node):
                 for match_node in table_node.find_all("tr"):
@@ -315,10 +310,7 @@ class Tournament:
                 self.participant_lookup[span.a.text] = (name, href, *data)
             player_row = next_tag(player_row)
 
-    def team_name_from_node(self, node, column_index):
-        columns = node.find_all("td")
-        links = columns[column_index].find_all("a")
-        team_name = links[-1].text
+    def team_name_from_node(self, team_name):
         try:
             team = self.teams[team_name]
             members = [x[0] for x in team["members"]]
@@ -355,95 +347,86 @@ class Tournament:
         """Loads all places."""
         if not prize_table:
             return
-        idx = self.name_column_index(prize_table)
+        participant_idx = self.name_column_index(prize_table)
         current_place = ""
         current_prize = ""
-        places = defaultdict(list)
-        for row in prize_table.find_all("tr"):
-            tds = row.find_all("td")
-            if not tds:
+        seconds = []
+        thirds = []
+        for row in prize_table.find_all("div", recursive=False):
+            divs = row.find_all("div", recursive=False)
+            if not divs:
                 continue
             name_idx = 0
-            if "rowspan" in tds[0].attrs:
-                current_place = tds[0].text.strip()
-                current_prize = tds[1].text.strip()
-                current_prize = "" if current_prize == "-" else current_prize
-                name_idx = idx
-            if "TBD" in tds[name_idx].text:
+            current_place = divs[0].text.strip()
+            current_prize = divs[1].text.strip()
+            current_prize = "" if current_prize == "-" else current_prize
+            name_idx = participant_idx
+            if len(divs) <= name_idx or "TBD" in divs[name_idx].text:
                 continue
-            links = tds[name_idx].find_all("a")
-            if not links:
-                continue
-            name = links[-1].text.strip()
-            if self.team:
-                name = self.team_name_from_node(row, name_idx)
-            self.placements[liquipedia_key(links[-1])] = (
-                current_place,
-                current_prize,
-            )
-            if current_place.startswith("1st"):
-                places[1] = [
-                    name,
-                    valid_href(links[-1]),
-                ]
-            elif current_place.startswith("2nd"):
-                places[2].append(name)
-            elif current_place.startswith("3rd"):
-                places[3].append(name)
-            elif current_place == "4th":
-                places[4].append(name)
-        if places[1]:
-            self.first_place, self.first_place_url = places[1]
-        if places[2]:
-            self.second_place = " - ".join(places[2])
-        for place in (
-            3,
-            4,
-        ):
-            if places[place]:
-                self.runners_up.append(" - ".join(places[place]))
+            for div in divs[participant_idx:]:
+                name_node  = div.find_all("span", {"class":"name"})
+                if not name_node:
+                    continue
+                name = name_node[0].text.strip()
+                if self.team:
+                    name = self.team_name_from_node(name)
+                link = name_node[0].a
+                self.placements[liquipedia_key(link)] = (
+                    current_place,
+                    current_prize,
+                )
+                if current_place == "1st":
+                    self.first_place = name
+                    self.first_place_url = valid_href(link)
+                    break
+                if current_place.startswith("2nd"):
+                    seconds.append(name)
+                elif current_place.startswith("3rd-"):
+                    thirds.append(name)
+                elif current_place == "3rd":
+                    self.runners_up.append(name)                    
+                elif current_place == "4th":
+                    self.runners_up.append(name)                    
+        self.second_place = " - ".join(seconds)
+        if thirds:
+            self.runners_up.append(" - ".join(thirds))
 
     def name_column_index(self, node):
         """Looks at the headers to find the approiate index for the name"""
-        column_header = "Team" if self.team else "Player"
-        ths = node.find_all("th", recursive=True)
-        for idx, th in enumerate(ths):
-            if column_header in th.text:
-                return idx
-        # Try the other
-        column_header = "Team" if not self.team else "Player"
-        for idx, th in enumerate(ths):
-            if column_header in th.text:
-                return idx
+        for row in node.children:
+            for idx, div in enumerate(row.find_all('div', recursive=False)):
+                if div.text.strip() == 'Participant':
+                    return idx
+        return 0
 
     def load_info_box(self, info_box):
         """Parse information from info box"""
         for div in info_box.find_all("div"):
             try:
-                if not self.prize and div.div.text == "Prize pool:":
+                if not self.prize and div.text.strip() == "Prize Pool:":
                     self.prize = text_from_tag(div, "div")
-                if div.div.text == "Series:":
+                if div.text == "Series:":
                     self.series = text_from_tag(div, "div")
-                if div.div.text in (
+                if div.text in (
                     "Organizer:",
                     "Organizers:",
                 ):
                     self.organizers = div_attributes(div)
-                if div.div.text == "Game Mode:":
+                if div.text == "Game Mode:":
                     self.game_mode = text_from_tag(div, "div")
-                if div.div.text == "Format:":
+                if div.text == "Format:":
                     self.format_style = text_from_tag(div, "div")
                     if "FFA" or "1v1" in self.format_style:
                         self.team = False
                     if TEAM_PATTERN.search(self.format_style):
                         self.team = True
-                if div.div.text == "Sponsor(s):":
+                if div.text == "Sponsor(s):":
                     self.sponsors = div_attributes(div)
-                if div.div.text == "Start Date:":
+                if div.text == "Start Date:":
                     self.start = date.fromisoformat(text_from_tag(div, "div"))
-                if div.div.text == "End Date:":
+                if div.text == "End Date:":
                     self.end = date.fromisoformat(text_from_tag(div, "div"))
-                if div.div.text == "Date:":
+                if div.text == "Date:":
                     self.start = date.fromisoformat(text_from_tag(div, "div"))
                     self.end = date.fromisoformat(text_from_tag(div, "div"))
             except AttributeError:
@@ -525,7 +508,10 @@ class PlayerMatch:
     def __init__(self, row):
         tds = row.find_all("td")
         self.end = datetime.strptime(tds[0].text, "%Y-%m-%d").date()
-        self.tier = tds[2].a.text
+        if tds[2].a:
+            self.tier = tds[2].a.text
+        else:
+            self.tier = 'Showmatch'
         self.game = tds[3].span.a.attrs["title"]
         self.tournament_name = tds[5].text
         self.tournament_url = tds[5].a.attrs["href"]
@@ -569,9 +555,9 @@ class PlayerManager:
                 raise
         results_table = node_from_class(data, "wikitable")
         for node in results_table.descendants:
-            if node.name == "tr" and len(node.find_all("td")) == 11:
+            if node.name == "tr" and len(node.find_all("td")) == 10:
                 tournament = Tournament()
-                tournament.load_from_player(node)
+                tournament.load_from_player(node, player_url)
                 player_tournaments.append(tournament)
         return player_tournaments
 
