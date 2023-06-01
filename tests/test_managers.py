@@ -558,3 +558,12 @@ def test_prize_pool_div(loader):
     tournament = Tournament('/ageofempires/Death_Match_World_Cup/5/Qualifier')
     tournament.load_advanced(loader)
     assert len(tournament.matches) == 24
+
+
+def test_exclude_tbd_from_multiple_participants(loader):
+    # just no null pointer
+    tournament = Tournament('/ageofempires/AoE2_Admirals_League/2')
+    tournament.load_advanced(loader)
+    placed = [x for x in tournament.placements.values() if x]
+    assert len(placed) == 9
+

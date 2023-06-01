@@ -361,13 +361,15 @@ class Tournament:
             current_prize = divs[1].text.strip()
             current_prize = "" if current_prize == "-" else current_prize
             name_idx = participant_idx
-            if len(divs) <= name_idx or "TBD" in divs[name_idx].text:
+            if len(divs) <= name_idx:
                 continue
             for div in divs[participant_idx:]:
                 name_node  = div.find_all("span", {"class":"name"})
                 if not name_node:
                     continue
                 name = name_node[0].text.strip()
+                if 'TBD' in name:
+                    continue
                 if self.team:
                     name = self.team_name_from_node(name)
                 link = name_node[0].a
