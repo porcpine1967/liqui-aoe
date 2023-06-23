@@ -570,3 +570,11 @@ def test_handle_substitutes_in_team_rosters(loader):
     tournament = Tournament('/ageofempires/Rising_Empires_League/1/Division/1')
     tournament.load_advanced(loader)
     assert (len(tournament.teams['Saint Peter']['members'])) == 5
+
+def test_lists(loader):
+    tournament = Tournament("/ageofempires/Wandering_Warriors_Cup")
+    tournament.load_advanced(loader)
+    assert (len(tournament.links)) == 6
+    assert tournament.links[0]['href'] == 'https://play.toornament.com/en_GB/tournaments/5263664076331442176/stages/5269392133409775616/'
+    assert tournament.links[0]['type'] == 'bracket'
+    assert tournament.links[-1]['type'] == 'aoezone'

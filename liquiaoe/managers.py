@@ -179,6 +179,7 @@ class Tournament:
         self.teams = {}
         self.placements = defaultdict(str)
         self.matches = []
+        self.links = []
 
     def __str__(self):
         return self.name
@@ -408,6 +409,7 @@ class Tournament:
 
     def load_info_box(self, info_box):
         """Parse information from info box"""
+        test_for_links = False
         for div in info_box.find_all("div"):
             try:
                 if not self.prize and div.text.strip() == "Prize Pool:":
@@ -436,6 +438,18 @@ class Tournament:
                 if div.text == "Date:":
                     self.start = date.fromisoformat(text_from_tag(div, "div"))
                     self.end = date.fromisoformat(text_from_tag(div, "div"))
+                if test_for_links:
+                    for a in div.find_all('a'):
+                        link_data = {'href': a.attrs["href"], 'type': None}
+                        self.links.append(link_data)
+                        for i in a.find_all('i'):
+                            for class_name in i.attrs['class']:
+                                if class_name.startswith('lp-') and class_name != 'lp-icon':
+                                    link_data['type'] = class_name[3:]
+                    if self.links:
+                        test_for_links = False                        
+                if div.text == 'Links':
+                    test_for_links = True
             except AttributeError:
                 pass
 
