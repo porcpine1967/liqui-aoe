@@ -432,9 +432,15 @@ class Tournament:
                 if div.text == "Sponsor(s):":
                     self.sponsors = div_attributes(div)
                 if div.text == "Start Date:":
-                    self.start = date.fromisoformat(text_from_tag(div, "div"))
+                    try:
+                        self.start = date.fromisoformat(text_from_tag(div, "div"))
+                    except ValueError:
+                        pass
                 if div.text == "End Date:":
-                    self.end = date.fromisoformat(text_from_tag(div, "div"))
+                    try:
+                        self.end = date.fromisoformat(text_from_tag(div, "div"))
+                    except ValueError:
+                        pass
                 if div.text == "Date:":
                     self.start = date.fromisoformat(text_from_tag(div, "div"))
                     self.end = date.fromisoformat(text_from_tag(div, "div"))

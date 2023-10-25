@@ -578,3 +578,11 @@ def test_lists(loader):
     assert tournament.links[0]['href'] == 'https://play.toornament.com/en_GB/tournaments/5263664076331442176/stages/5269392133409775616/'
     assert tournament.links[0]['type'] == 'bracket'
     assert tournament.links[-1]['type'] == 'aoezone'
+
+def test_bad_dates(loader):
+    tournament = Tournament("/ageofempires/Copa_Libertadores_3K")
+    tournament.start = date(2023, 11, 1)
+    tournament.end = date(2023, 12, 1)
+    tournament.load_advanced(loader)
+    assert tournament.start == date(2023, 11, 1)
+    assert tournament.end == date(2023, 12, 1)
