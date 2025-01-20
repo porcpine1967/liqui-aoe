@@ -494,8 +494,11 @@ class Tournament:
             self.start = datetime.strptime(start.strip(), "%b %d, %Y").date()
             self.end = datetime.strptime(end.strip(), "%b %d, %Y").date()
         else:
-            self.start = datetime.strptime(text.strip(), "%b %d, %Y").date()
-            self.end = self.start
+            try:
+                self.start = datetime.strptime(text.strip(), "%b %d, %Y").date()
+                self.end = self.start
+            except ValueError:
+                pass
 
     def load_participant_count(self, text):
         match = PARTICIPANTS.match(text)
