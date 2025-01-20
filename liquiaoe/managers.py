@@ -75,6 +75,8 @@ class TournamentManager:
                     tournament.load_from_portal(row)
                     if tournament.url in loaded:
                         continue
+                    if not tournament.start:
+                        continue
                     loaded.add(tournament.url)
                     if not tournament.tier:
                         break
